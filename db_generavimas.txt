@@ -1,0 +1,95 @@
+================================================================
+  GLEBIS — DB PALINKĖJIMŲ GENERAVIMO UŽDUOTIS
+================================================================
+
+Sugeneruok SQL INSERT sakinius į lentelę `wishes`.
+Lentelės struktūra:
+  id (auto), text (tekstas), wish_tone (enum), mood_want (enum)
+
+Kalba: LIETUVIŲ
+Ilgis: 1–3 sakiniai, natūralus tonas, be vardo
+
+Kiekvienai kombinacijai sugeneruok PO 3 skirtingus variantus.
+
+----------------------------------------------------------------
+WISH_TONE reikšmės:
+  SIMPLE      — paprastas, neutralus
+  SUPPORTIVE  — šiltas, palaikantis
+  FUNNY       — juokingas, žaismingas
+  ROMANTIC    — romantiškas, jausmingas
+  BIRTHDAY    — gimtadienio stiliaus
+
+MOOD_WANT reikšmės:
+  CHEER_ME_UP   — pralinksmink
+  SUPPORT_ME    — palaikyk
+  INSPIRE_ME    — įkvėpk
+  GOOD_DAY      — geros dienos palinkėjimas
+  SWEET_DREAMS  — saldžių sapnų palinkėjimas
+  SURPRISE_ME   — nustebink
+  CALM_ME_DOWN  — nuramink
+  JUST_BE_THERE — tylus buvimas šalia
+
+----------------------------------------------------------------
+KOMBINACIJOS (iš viso 40, po 3 = 120 įrašų):
+
+SIMPLE      x CHEER_ME_UP
+SIMPLE      x SUPPORT_ME
+SIMPLE      x INSPIRE_ME
+SIMPLE      x GOOD_DAY
+SIMPLE      x SWEET_DREAMS
+SIMPLE      x SURPRISE_ME
+SIMPLE      x CALM_ME_DOWN
+SIMPLE      x JUST_BE_THERE
+
+SUPPORTIVE  x CHEER_ME_UP
+SUPPORTIVE  x SUPPORT_ME
+SUPPORTIVE  x INSPIRE_ME
+SUPPORTIVE  x GOOD_DAY
+SUPPORTIVE  x SWEET_DREAMS
+SUPPORTIVE  x SURPRISE_ME
+SUPPORTIVE  x CALM_ME_DOWN
+SUPPORTIVE  x JUST_BE_THERE
+
+FUNNY       x CHEER_ME_UP
+FUNNY       x SUPPORT_ME
+FUNNY       x INSPIRE_ME
+FUNNY       x GOOD_DAY
+FUNNY       x SWEET_DREAMS
+FUNNY       x SURPRISE_ME
+FUNNY       x CALM_ME_DOWN
+FUNNY       x JUST_BE_THERE
+
+ROMANTIC    x CHEER_ME_UP
+ROMANTIC    x SUPPORT_ME
+ROMANTIC    x INSPIRE_ME
+ROMANTIC    x GOOD_DAY
+ROMANTIC    x SWEET_DREAMS
+ROMANTIC    x SURPRISE_ME
+ROMANTIC    x CALM_ME_DOWN
+ROMANTIC    x JUST_BE_THERE
+
+BIRTHDAY    x CHEER_ME_UP
+BIRTHDAY    x SUPPORT_ME
+BIRTHDAY    x INSPIRE_ME
+BIRTHDAY    x GOOD_DAY
+BIRTHDAY    x SWEET_DREAMS
+BIRTHDAY    x SURPRISE_ME
+BIRTHDAY    x CALM_ME_DOWN
+BIRTHDAY    x JUST_BE_THERE
+
+----------------------------------------------------------------
+MISLĖS (SendMode = GUESS)
+
+Sugeneruok 30 mislių į lentelę `riddles`.
+Lentelės struktūra:
+  id (auto), text (tekstas), relationship_type (enum)
+
+Misles turi: be vardo, 2–4 eilutės, užuomina apie siuntėją.
+
+RELATIONSHIP_TYPE reikšmės:
+  MOTHER, FATHER, CHILD, PARTNER, FRIEND,
+  BROTHER, SISTER, GRANDFATHER, GRANDMOTHER
+
+Po ~3 misles kiekvienam santykio tipui.
+
+================================================================
