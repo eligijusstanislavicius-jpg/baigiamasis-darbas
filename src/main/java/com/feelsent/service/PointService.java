@@ -25,11 +25,13 @@ public class PointService {
     private final UserRepository userRepository;
 
     // Prideda 5 taškus siuntėjui kai gavėjas teisingai atspėjo toną
+    @Transactional
     public void awardGuessCorrect(User sender, Message message) {
         award(sender, message, POINTS_GUESS_CORRECT, PointReason.GUESS_CORRECT);
     }
 
     // Prideda 10 taškų siuntėjui kai gavėjas sureagavo į žinutę
+    @Transactional
     public void awardReactionReceived(User sender, Message message) {
         award(sender, message, POINTS_REACTION_RECEIVED, PointReason.REACTION_RECEIVED);
     }
@@ -39,9 +41,7 @@ public class PointService {
         return pointTransactionRepository.findAllByUser(user);
     }
 
-    // @Transactional užtikrina atomą: arba abu įrašai išsaugomi, arba nei vienas
     // incrementPoints naudoja SQL UPDATE ... + :points – apsaugo nuo race condition
-    @Transactional
     private void award(User user, Message message, int points, PointReason reason) {
         PointTransaction transaction = new PointTransaction();
         transaction.setUser(user);

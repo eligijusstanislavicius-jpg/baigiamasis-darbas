@@ -1,6 +1,7 @@
 package com.feelsent.config;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -12,9 +13,13 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-// @Configuration – Spring žino kad čia yra konfigūracijos klasė
-// @EnableWebSecurity – įjungiame Spring Security
+import java.util.Arrays;
+import java.util.List;
+
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -22,38 +27,46 @@ public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
 
+    @Value("${cors.allowed-origins}")
+    private String allowedOriginsRaw;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            // Išjungiame CSRF – REST API nereikia (naudojame JWT)
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
-
-            // Nustatome užklausų leidimus
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll()                        // registracija ir prisijungimas – laisvi
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()   // Swagger UI
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")                  // tik adminui
-                .anyRequest().authenticated()                                       // visos kitos užklausos – reikia JWT
+                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .anyRequest().authenticated()
             )
-
-            // Išjungiame sesijas – JWT yra stateless (kiekviena užklausa turi token'ą)
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
-
-            // Pridedame mūsų JWT filtrą prieš standartinį Spring Security filtrą
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    // BCrypt – slaptažodžių šifravimo algoritmas
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(Arrays.stream(allowedOriginsRaw.split(",")).map(String::trim).toList());
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/**", config);
+        return source;
+    }
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // AuthenticationManager – naudojamas prisijungimo metu slaptažodžio tikrinimui
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();

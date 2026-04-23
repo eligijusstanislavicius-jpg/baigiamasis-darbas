@@ -3,11 +3,12 @@ package com.feelsent.exception;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-// @RestControllerAdvice – pagauna visas klaidas iš visų kontrolerių vienoje vietoje
-// @Slf4j – Lombok: sukuria log kintamąjį automatiškai (log.error, log.info ir t.t.)
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
@@ -55,9 +56,41 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
         log.error("Neteisingi duomenys: {}", ex.getMessage());
+        String message = ex.getMessage() != null && ex.getMessage().startsWith("No enum constant")
+                ? "Neteisinga reikšmė"
+                : ex.getMessage();
         return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST) // 400
-                .body(new ErrorResponse("BAD_REQUEST", ex.getMessage()));
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse("BAD_REQUEST", message));
+    }
+
+    @ExceptionHandler(NumberFormatException.class)
+    public ResponseEntity<ErrorResponse> handleNumberFormat(NumberFormatException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse("BAD_REQUEST", "Neteisingas skaičiaus formatas"));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex) {
+        log.error("Duomenų vientisumo klaida: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse("CONFLICT", "Įrašas jau egzistuoja arba yra susijusių įrašų"));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(new ErrorResponse("FORBIDDEN", "Neturite teisės atlikti šį veiksmą"));
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthentication(AuthenticationException ex) {
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponse("UNAUTHORIZED", "Neprisijungęs arba baigėsi sesija"));
     }
 
     // Pagauna visas kitas nenumatytas klaidas
@@ -65,7 +98,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleGeneral(Exception ex) {
         log.error("Nenumatyta klaida: {}", ex.getMessage());
         return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR) // 500
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ErrorResponse("INTERNAL_ERROR", "Įvyko serverio klaida"));
     }
 }

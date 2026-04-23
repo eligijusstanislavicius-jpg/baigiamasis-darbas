@@ -16,6 +16,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -30,9 +31,13 @@ public class UserService {
     private final EmailService emailService;         // el. laiškų siuntimui
 
     // Registruoja naują vartotoją ir grąžina JWT token'ą
+    @Transactional
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("El. paštas jau užregistruotas");
+        }
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new IllegalArgumentException("Vartotojo vardas jau užimtas");
         }
 
         User user = new User();
@@ -56,6 +61,7 @@ public class UserService {
     }
 
     // Prisijungimas – tikrina slaptažodį ir grąžina JWT token'ą
+    @Transactional
     public AuthResponse login(LoginRequest request) {
         // authenticationManager pats patikrina email + slaptažodį per CustomUserDetailsService
         // jei neteisingi – automatiškai išmetama klaida
@@ -92,6 +98,7 @@ public class UserService {
     }
 
     // Atnaujina kaip vartotojas jaučiasi
+    @Transactional
     public void updateMoodStatus(String email, MoodStatus moodStatus) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("Vartotojas nerastas"));
@@ -100,6 +107,7 @@ public class UserService {
     }
 
     // Atnaujina ko vartotojas norėtų gauti
+    @Transactional
     public void updateMoodWant(String email, MoodWant moodWant) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("Vartotojas nerastas"));
@@ -113,8 +121,9 @@ public class UserService {
                 .orElseThrow(() -> new UserNotFoundException("Vartotojas nerastas"));
 
         int points = user.getPoints();
-        int pointsToNextLevel = 100 - (points % 100); // kiek liko iki kito lygio
-        int percent = points % 100;                   // procentas iki kito lygio
+        int remainder = points % 100;
+        int pointsToNextLevel = remainder == 0 ? (points == 0 ? 100 : 0) : 100 - remainder;
+        int percent = remainder == 0 ? (points == 0 ? 0 : 100) : remainder;
 
         return java.util.Map.of(
                 "points", points,

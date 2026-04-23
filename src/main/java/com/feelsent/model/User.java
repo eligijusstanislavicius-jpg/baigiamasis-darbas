@@ -4,17 +4,24 @@ import com.feelsent.enums.MoodStatus;
 import com.feelsent.enums.MoodWant;
 import com.feelsent.enums.Role;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
-@Data
+@Getter
+@Setter
+@ToString(exclude = {"passwordHash"})
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // auto-increment ID
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @Column(unique = true, nullable = false) // negali būti du vartotojai su tuo pačiu username

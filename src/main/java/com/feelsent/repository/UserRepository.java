@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import org.springframework.data.domain.Pageable;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -19,8 +21,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     boolean existsByEmail(String email); // tikrina ar el. paštas jau užregistruotas
 
-    // Vartotojai, kurie nesilankė nuo nurodyto laiko – re-engagement tikrinimui
-    List<User> findAllByLastLoginAtBefore(LocalDateTime threshold);
+    // Vartotojai, kurie nesilankė nuo nurodyto laiko – re-engagement tikrinimui (su paginacija)
+    List<User> findAllByLastLoginAtBefore(LocalDateTime threshold, Pageable pageable);
 
     // Atominis taškų prieaugis – apsaugo nuo race condition esant vienalaikėms užklausoms
     @Modifying

@@ -78,6 +78,7 @@ public class MessageService {
     }
 
     // Gavėjas atidaro žinutę: SENT → OPENED
+    @Transactional
     public MessageResponse openMessage(String receiverEmail, Long messageId) {
         Message message = findMessageForReceiver(receiverEmail, messageId);
 
@@ -91,6 +92,7 @@ public class MessageService {
 
     // Gavėjas spėja toną (tik GUESS režimas): OPENED → GUESSED
     // Jei teisingai – siuntėjas gauna 5 taškus
+    @Transactional
     public MessageResponse guessWish(String receiverEmail, Long messageId, WishTone guessedTone) {
         Message message = findMessageForReceiver(receiverEmail, messageId);
 
@@ -146,6 +148,7 @@ public class MessageService {
             Arrays.asList(MessageStatus.REACTED, MessageStatus.EXPIRED);
 
     // Inbox: tik laukiančios reakcijos žinutės – be REACTED ir EXPIRED
+    @Transactional(readOnly = true)
     public List<MessageResponse> getInbox(String email) {
         User user = getUser(email);
         return messageRepository.findAllByReceiverAndStatusNotInOrderBySentAtDesc(user, INACTIVE_STATUSES)
@@ -155,6 +158,7 @@ public class MessageService {
     }
 
     // Sent: tik aktyvios žinutės – be REACTED ir EXPIRED
+    @Transactional(readOnly = true)
     public List<MessageResponse> getSent(String email) {
         User user = getUser(email);
         return messageRepository.findAllBySenderAndStatusNotInOrderBySentAtDesc(user, INACTIVE_STATUSES)
@@ -194,13 +198,15 @@ public class MessageService {
     // GUESS režimas: kol status=SENT arba OPENED – tekstas neparodytas (tik paveikslėlis)
     private MessageResponse toResponse(Message m) {
         boolean isGuessMode = m.getSendMode() == SendMode.GUESS;
-        boolean textVisible = !isGuessMode
+        boolean revealed = !isGuessMode
                 || m.getStatus() == MessageStatus.GUESSED
                 || m.getStatus() == MessageStatus.REACTED;
 
-        String wishText = textVisible ? m.getWish().getText() : null;
+        // GUESS režimas: tekstas ir tonas slepiami kol gavėjas neatspėja
+        String wishText = revealed ? m.getWish().getText() : null;
+        WishTone wishTone = revealed ? m.getWish().getTone() : null;
+        String wishToneLabel = revealed ? m.getWish().getTone().getLabel() : null;
 
-        // suggestReply=true kai gavėjas sureagavo – siūlome siųsti palinkėjimą atgal
         boolean suggestReply = m.getStatus() == MessageStatus.REACTED;
 
         Reaction reaction = m.getReaction();
@@ -214,8 +220,8 @@ public class MessageService {
                 m.getReceiver().getFirstName(),
                 m.getWish().getId(),
                 wishText,
-                m.getWish().getTone(),
-                m.getWish().getTone().getLabel(),
+                wishTone,
+                wishToneLabel,
                 "/static/images/wishes/" + m.getWish().getId() + ".png",
                 m.getSendMode(),
                 m.getSendMode().getLabel(),

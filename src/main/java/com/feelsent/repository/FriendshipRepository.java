@@ -23,5 +23,7 @@ public interface FriendshipRepository extends JpaRepository<Friendship, Long> {
 
     List<Friendship> findAllByReceiverAndStatus(User receiver, FriendshipStatus status);
 
-    boolean existsBySenderAndReceiver(User sender, User receiver);
+    // Tikrina ar egzistuoja aktyvi draugystė (PENDING arba ACCEPTED) – DECLINED/REMOVED leidžia pakartotinę užklausą
+    @Query("SELECT COUNT(f) > 0 FROM Friendship f WHERE f.sender = :sender AND f.receiver = :receiver AND f.status IN ('PENDING', 'ACCEPTED')")
+    boolean existsActiveRelationship(@Param("sender") User sender, @Param("receiver") User receiver);
 }

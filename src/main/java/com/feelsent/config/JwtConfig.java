@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 // @Component – Spring automatiškai sukuria šį objektą ir leidžia jį inject'inti kitur
@@ -22,7 +23,7 @@ public class JwtConfig {
 
     // Sukuria slaptą raktą iš teksto eilutės
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(secret.getBytes());
+        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
     // Sugeneruoja JWT token pagal vartotojo vardą

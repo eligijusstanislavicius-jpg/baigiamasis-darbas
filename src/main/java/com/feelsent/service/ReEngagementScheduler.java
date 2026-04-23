@@ -8,6 +8,7 @@ import com.feelsent.repository.MessageRepository;
 import com.feelsent.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +31,7 @@ public class ReEngagementScheduler {
     @Scheduled(cron = "0 0 10 * * *")
     public void sendReEngagementEmails() {
         LocalDateTime threshold = LocalDateTime.now().minusDays(7);
-        List<User> inactiveUsers = userRepository.findAllByLastLoginAtBefore(threshold);
+        List<User> inactiveUsers = userRepository.findAllByLastLoginAtBefore(threshold, PageRequest.of(0, 500));
 
         for (User user : inactiveUsers) {
             if (notificationService.hasUnread(user)) {

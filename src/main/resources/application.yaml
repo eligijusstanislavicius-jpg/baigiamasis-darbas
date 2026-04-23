@@ -36,6 +36,15 @@ spring:
           starttls:
             enable: true
 
+# Admin paskyra (env variables)
+admin:
+  email: ${ADMIN_EMAIL}
+  password: ${ADMIN_PASSWORD}
+
+# CORS
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
+
 # Verslo taisyklės
 app:
   limits:

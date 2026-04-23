@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
-@Table(name = "message_limits")
+@Table(name = "message_limits", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"receiver_id", "sender_id"})
+})
 @Data
 public class MessageLimit {
 

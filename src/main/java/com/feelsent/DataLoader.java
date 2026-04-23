@@ -9,6 +9,7 @@ import com.feelsent.repository.UserRepository;
 import com.feelsent.repository.WishRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -25,16 +26,22 @@ public class DataLoader implements CommandLineRunner {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    @Value("${admin.email}")
+    private String adminEmail;
+
+    @Value("${admin.password}")
+    private String adminPassword;
+
     @Override
     public void run(String... args) {
         // ── Admino kūrimas (tik jei dar nėra) ───────────────────────────────────
-        if (!userRepository.existsByEmail("eligijusstanislavicius@gmail.com")) {
+        if (!userRepository.existsByEmail(adminEmail)) {
             User admin = new User();
             admin.setUsername("ElisWelis");
             admin.setFirstName("Eligijus");
             admin.setLastName("Stanislavičius");
-            admin.setEmail("eligijusstanislavicius@gmail.com");
-            admin.setPasswordHash(passwordEncoder.encode("1.ManoProjektas.1"));
+            admin.setEmail(adminEmail);
+            admin.setPasswordHash(passwordEncoder.encode(adminPassword));
             admin.setRole(Role.ADMIN);
             admin.setPoints(0);
             admin.setCreatedAt(LocalDateTime.now());

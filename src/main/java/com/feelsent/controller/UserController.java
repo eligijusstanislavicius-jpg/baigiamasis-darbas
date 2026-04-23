@@ -30,16 +30,23 @@ public class UserController {
     @PatchMapping("/me/mood")
     public ResponseEntity<Void> updateMood(@RequestBody Map<String, String> body,
                                            Authentication authentication) {
-        MoodStatus moodStatus = MoodStatus.valueOf(body.get("moodStatus")); // tekstą paverčiame enum
+        String raw = body.get("moodStatus");
+        if (raw == null || raw.isBlank()) throw new IllegalArgumentException("Laukas 'moodStatus' yra privalomas");
+        MoodStatus moodStatus;
+        try { moodStatus = MoodStatus.valueOf(raw.toUpperCase()); }
+        catch (IllegalArgumentException e) { throw new IllegalArgumentException("Neteisinga nuotaikos reikšmė: " + raw); }
         userService.updateMoodStatus(authentication.getName(), moodStatus);
         return ResponseEntity.ok().build();
     }
 
-    // PATCH /api/users/me/want – atnaujina ko vartotojas norėtų gauti
     @PatchMapping("/me/want")
     public ResponseEntity<Void> updateWant(@RequestBody Map<String, String> body,
                                            Authentication authentication) {
-        MoodWant moodWant = MoodWant.valueOf(body.get("moodWant")); // tekstą paverčiame enum
+        String raw = body.get("moodWant");
+        if (raw == null || raw.isBlank()) throw new IllegalArgumentException("Laukas 'moodWant' yra privalomas");
+        MoodWant moodWant;
+        try { moodWant = MoodWant.valueOf(raw.toUpperCase()); }
+        catch (IllegalArgumentException e) { throw new IllegalArgumentException("Neteisinga norų reikšmė: " + raw); }
         userService.updateMoodWant(authentication.getName(), moodWant);
         return ResponseEntity.ok().build();
     }

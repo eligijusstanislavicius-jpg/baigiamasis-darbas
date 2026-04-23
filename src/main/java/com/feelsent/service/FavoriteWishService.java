@@ -13,6 +13,7 @@ import com.feelsent.repository.WishRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -40,6 +41,7 @@ public class FavoriteWishService {
     }
 
     // Išsaugo DB palinkėjimą į mėgstamus (tikrina 10 vnt. limitą ir dublikatus)
+    @Transactional
     public FavoriteWishResponse add(String email, Long wishId) {
         User user = getUser(email);
 
@@ -65,6 +67,7 @@ public class FavoriteWishService {
     }
 
     // Ištrina mėgstamą palinkėjimą – tikrina kad priklauso šiam vartotojui
+    @Transactional
     public void delete(String email, Long id) {
         User user = getUser(email);
         FavoriteWish favoriteWish = favoriteWishRepository.findByIdAndUser(id, user)

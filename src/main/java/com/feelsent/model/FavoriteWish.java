@@ -6,7 +6,9 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "favorite_wishes")
+@Table(name = "favorite_wishes", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"user_id", "wish_id"})
+})
 @Data
 public class FavoriteWish {
 

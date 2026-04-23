@@ -22,6 +22,9 @@ public class MessageLimitController {
     @PostMapping
     public ResponseEntity<MessageLimitResponse> setLimit(@RequestBody Map<String, Object> body,
                                                          Authentication authentication) {
+        if (body.get("senderId") == null) throw new IllegalArgumentException("Laukas 'senderId' yra privalomas");
+        if (body.get("dailyLimit") == null) throw new IllegalArgumentException("Laukas 'dailyLimit' yra privalomas");
+
         Long senderId = Long.valueOf(body.get("senderId").toString());
         int dailyLimit = Integer.parseInt(body.get("dailyLimit").toString());
         return ResponseEntity.ok(messageLimitService.setLimit(authentication.getName(), senderId, dailyLimit));

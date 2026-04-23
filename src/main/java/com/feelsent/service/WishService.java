@@ -95,9 +95,9 @@ public class WishService {
                 .toList();
     }
 
-    // Grąžina vieną palinkėjimą pagal ID (naudojama atidarius "voką" GUESS režime)
+    // Grąžina vieną aktyvų palinkėjimą pagal ID (naudojama atidarius "voką" GUESS režime)
     public WishResponse getWishById(Long id) {
-        Wish wish = wishRepository.findById(id)
+        Wish wish = wishRepository.findByIdAndActiveTrue(id)
                 .orElseThrow(() -> new IllegalArgumentException("Palinkėjimas nerastas"));
         return toResponse(wish);
     }

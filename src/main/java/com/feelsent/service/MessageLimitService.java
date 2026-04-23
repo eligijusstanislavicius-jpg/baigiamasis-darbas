@@ -8,6 +8,7 @@ import com.feelsent.repository.MessageLimitRepository;
 import com.feelsent.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -21,6 +22,7 @@ public class MessageLimitService {
 
     // Gavėjas nustato arba atnaujina limitą konkrečiam siuntėjui
     // Jei limitas jau egzistuoja – atnaujinamas, jei ne – sukuriamas naujas
+    @Transactional
     public MessageLimitResponse setLimit(String receiverEmail, Long senderId, int dailyLimit) {
         if (dailyLimit < 1) {
             throw new IllegalArgumentException("Limitas turi būti bent 1");
@@ -49,6 +51,7 @@ public class MessageLimitService {
     }
 
     // Gavėjas pašalina limitą – siuntėjas vėl gali siųsti neribotai
+    @Transactional
     public void removeLimit(String receiverEmail, Long senderId) {
         User receiver = getUser(receiverEmail);
         User sender = userRepository.findById(senderId)

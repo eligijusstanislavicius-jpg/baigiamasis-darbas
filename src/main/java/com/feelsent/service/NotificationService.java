@@ -22,6 +22,7 @@ public class NotificationService {
     private final UserRepository userRepository;
 
     // Sukuria in-app pranešimą vartotojui
+    @Transactional
     public void create(User user, NotificationType type, String text, Long relatedEntityId) {
         Notification notification = new Notification();
         notification.setUser(user);
@@ -42,6 +43,7 @@ public class NotificationService {
     }
 
     // Pažymi vieną pranešimą kaip perskaitytą
+    @Transactional
     public void markRead(String email, Long notificationId) {
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new IllegalArgumentException("Pranešimas nerastas"));

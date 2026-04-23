@@ -38,15 +38,19 @@ public class FriendshipService {
         User receiver = userRepository.findById(receiverId)
                 .orElseThrow(() -> new UserNotFoundException("Gavėjas nerastas"));
 
+        if (relationshipType == null) {
+            throw new IllegalArgumentException("Ryšio tipas yra privalomas (relationshipType)");
+        }
+
         // Negalima siųsti sau pačiam
         if (sender.getId().equals(receiver.getId())) {
             throw new IllegalArgumentException("Negalima siųsti draugystės užklausos sau pačiam");
         }
 
-        // Tikrinama ar tokia užklausa jau egzistuoja (abiem kryptimis)
-        if (friendshipRepository.existsBySenderAndReceiver(sender, receiver) ||
-                friendshipRepository.existsBySenderAndReceiver(receiver, sender)) {
-            throw new IllegalArgumentException("Draugystės užklausa jau egzistuoja");
+        // Tikrinama ar egzistuoja aktyvi draugystė (PENDING arba ACCEPTED) – abiem kryptimis
+        if (friendshipRepository.existsActiveRelationship(sender, receiver) ||
+                friendshipRepository.existsActiveRelationship(receiver, sender)) {
+            throw new IllegalArgumentException("Draugystės užklausa jau egzistuoja arba esate draugai");
         }
 
         Friendship friendship = new Friendship();
@@ -83,6 +87,7 @@ public class FriendshipService {
     }
 
     // Atmeta draugystės užklausą – keičia statusą į DECLINED
+    @Transactional
     public FriendshipResponse declineRequest(String receiverEmail, Long friendshipId) {
         Friendship friendship = findAndValidate(friendshipId, receiverEmail);
         friendship.setStatus(FriendshipStatus.DECLINED);

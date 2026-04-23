@@ -42,7 +42,9 @@ public class JwtFilter extends OncePerRequestFilter {
 
         // Tikriname ar token'as galioja
         if (!jwtConfig.isTokenValid(token)) {
-            filterChain.doFilter(request, response);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\":\"UNAUTHORIZED\",\"message\":\"Negaliojantis arba pasibaigęs token'as\"}");
             return;
         }
 

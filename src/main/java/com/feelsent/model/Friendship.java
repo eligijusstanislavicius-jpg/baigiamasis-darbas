@@ -8,10 +8,15 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "friendships", indexes = {
-    @Index(name = "idx_friendship_sender_status", columnList = "sender_id, status"),
-    @Index(name = "idx_friendship_receiver_status", columnList = "receiver_id, status")
-})
+@Table(name = "friendships",
+    indexes = {
+        @Index(name = "idx_friendship_sender_status", columnList = "sender_id, status"),
+        @Index(name = "idx_friendship_receiver_status", columnList = "receiver_id, status")
+    },
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"sender_id", "receiver_id"})
+    }
+)
 @Data
 public class Friendship {
 

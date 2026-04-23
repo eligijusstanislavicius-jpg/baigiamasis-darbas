@@ -77,10 +77,25 @@ public class AdminController {
     })
     @PostMapping("/wishes")
     public ResponseEntity<WishResponse> addWish(@RequestBody Map<String, String> body) {
+        String text = body.get("text");
+        String toneRaw = body.get("tone");
+        String relationshipType = body.get("relationshipType");
+
+        if (text == null || text.isBlank()) throw new IllegalArgumentException("Laukas 'text' yra privalomas");
+        if (toneRaw == null || toneRaw.isBlank()) throw new IllegalArgumentException("Laukas 'tone' yra privalomas");
+        if (relationshipType == null || relationshipType.isBlank()) throw new IllegalArgumentException("Laukas 'relationshipType' yra privalomas");
+
+        WishTone tone;
+        try {
+            tone = WishTone.valueOf(toneRaw.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Nežinomas tono tipas: " + toneRaw);
+        }
+
         Wish wish = new Wish();
-        wish.setText(body.get("text"));
-        wish.setTone(WishTone.valueOf(body.get("tone")));
-        wish.setRelationshipType(body.get("relationshipType"));
+        wish.setText(text);
+        wish.setTone(tone);
+        wish.setRelationshipType(relationshipType.toUpperCase());
         wish.setActive(true);
 
         Wish saved = wishRepository.save(wish);
@@ -106,6 +121,6 @@ public class AdminController {
                 .orElseThrow(() -> new IllegalArgumentException("Palinkėjimas nerastas"));
         wish.setActive(false);
         wishRepository.save(wish);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 }
