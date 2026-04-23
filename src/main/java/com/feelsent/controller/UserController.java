@@ -56,4 +56,14 @@ public class UserController {
     public ResponseEntity<Map<String, Object>> getPoints(Authentication authentication) {
         return ResponseEntity.ok(userService.getPointsProgress(authentication.getName()));
     }
+
+    // GET /api/users/search?email=... – ieško vartotojo pagal el. paštą (draugystės pakvietimui)
+    @GetMapping("/search")
+    public ResponseEntity<UserProfileResponse> searchByEmail(@RequestParam String email,
+                                                              Authentication authentication) {
+        if (email.equalsIgnoreCase(authentication.getName())) {
+            throw new IllegalArgumentException("Negalima siųsti užklausos sau");
+        }
+        return ResponseEntity.ok(userService.getProfile(email));
+    }
 }
