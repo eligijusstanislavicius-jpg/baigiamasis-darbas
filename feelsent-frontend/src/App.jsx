@@ -56,7 +56,8 @@ function AppRoutes() {
       <Route path="/profile" element={<PrivateLayout><ProfilePage /></PrivateLayout>} />
       <Route path="/notifications" element={<PrivateLayout><NotificationsPage /></PrivateLayout>} />
       <Route path="/limits" element={<PrivateLayout><LimitsPage /></PrivateLayout>} />
-      <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
+      <Route path="/admin" element={<AdminRoute><AdminPage defaultTab="users" /></AdminRoute>} />
+      <Route path="/admin/wishes" element={<AdminRoute><AdminPage defaultTab="wishes" /></AdminRoute>} />
       <Route path="*" element={<Navigate to={token ? '/inbox' : '/login'} replace />} />
     </Routes>
     </>

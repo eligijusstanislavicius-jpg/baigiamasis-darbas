@@ -96,7 +96,7 @@ export default function ProfilePage() {
         {points && (
           <div className="mt-4">
             <div className="flex justify-between text-sm mb-1">
-              <span className="font-medium">{points.points} taškų</span>
+              <span className="font-medium">{points.points} taškų  •  {points.rank}</span>
               <span className="text-slate-400">+{points.pointsToNextLevel} iki kito lygio</span>
             </div>
             <div className="h-2 bg-slate-100 rounded-full overflow-hidden">

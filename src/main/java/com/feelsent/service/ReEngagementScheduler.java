@@ -26,6 +26,7 @@ public class ReEngagementScheduler {
     private final MessageRepository messageRepository;
     private final NotificationService notificationService;
     private final EmailService emailService;
+    private final com.feelsent.repository.NotificationRepository notificationRepository;
 
     // Kiekvieną dieną 10:00 tikrina neaktyvius vartotojus su neperskaitytais pranešimais
     @Scheduled(cron = "0 0 10 * * *")
@@ -39,6 +40,15 @@ public class ReEngagementScheduler {
                 log.info("Re-engagement laiškas išsiųstas: {}", user.getEmail());
             }
         }
+    }
+
+    // Kiekvieną dieną 03:00 ištrina pranešimus senesnius nei 7 dienos
+    @Transactional
+    @Scheduled(cron = "0 0 3 * * *")
+    public void deleteOldNotifications() {
+        LocalDateTime threshold = LocalDateTime.now().minusDays(7);
+        notificationRepository.deleteAllOlderThan(threshold);
+        log.info("Seni pranešimai (>7d) ištrinti");
     }
 
     // Kas valandą tikrina žinutes kurios liko neatsakytos ilgiau nei 2 dienas

@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { getUsers, deleteUser, getWishes, addWish, deactivateWish } from '../api/admin'
 
-export default function AdminPage() {
+export default function AdminPage({ defaultTab = 'users' }) {
   const [users, setUsers] = useState([])
   const [wishes, setWishes] = useState([])
-  const [tab, setTab] = useState('users')
+  const [tab, setTab] = useState(defaultTab)
   const [newWish, setNewWish] = useState({ text: '', tone: 'SUPPORTIVE', relationshipType: 'FRIEND' })
   const [err, setErr] = useState('')
 

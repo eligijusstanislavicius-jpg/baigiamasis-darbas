@@ -33,10 +33,15 @@ build/
 .vscode/
 
 ### Slaptažodžiai – NIEKADA nekelia į GitHub ###
+src/main/resources/application.yaml
 src/main/resources/application-local.yaml
 src/main/resources/application-local.properties
+src/main/resources/application-dev.yaml
 *.env
 .env
+
+### Sugeneruoti frontend failai (build metu sukuriami automatiškai) ###
+src/main/resources/static/
 
 ### Vietiniai įrankių nustatymai ###
 .claude/

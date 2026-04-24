@@ -125,10 +125,19 @@ public class UserService {
         int pointsToNextLevel = remainder == 0 ? (points == 0 ? 100 : 0) : 100 - remainder;
         int percent = remainder == 0 ? (points == 0 ? 0 : 100) : remainder;
 
+        String rank;
+        if (points >= 800)      rank = "Širdies žmogus";
+        else if (points >= 500) rank = "Mylintysis";
+        else if (points >= 300) rank = "Šiltas žmogus";
+        else if (points >= 150) rank = "Rūpestingasis";
+        else if (points >= 50)  rank = "Draugas";
+        else                    rank = "Naujokas";
+
         return java.util.Map.of(
                 "points", points,
                 "pointsToNextLevel", pointsToNextLevel,
-                "percent", percent
+                "percent", percent,
+                "rank", rank
         );
     }
 

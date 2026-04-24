@@ -43,18 +43,33 @@ export default function Sidebar() {
           </NavLink>
         ))}
         {isAdmin() && (
-          <NavLink
-            to="/admin"
-            className={({ isActive }) =>
-              `block px-6 py-2.5 text-sm transition-colors ${
-                isActive
-                  ? 'bg-red-50 text-red-700 font-medium border-r-2 border-red-600'
-                  : 'text-slate-600 hover:bg-slate-50'
-              }`
-            }
-          >
-            🛡️ Valdymas
-          </NavLink>
+          <>
+            <NavLink
+              to="/admin"
+              end
+              className={({ isActive }) =>
+                `block px-6 py-2.5 text-sm transition-colors ${
+                  isActive
+                    ? 'bg-red-50 text-red-700 font-medium border-r-2 border-red-600'
+                    : 'text-slate-600 hover:bg-slate-50'
+                }`
+              }
+            >
+              🛡️ Valdymas
+            </NavLink>
+            <NavLink
+              to="/admin/wishes"
+              className={({ isActive }) =>
+                `block px-6 py-2.5 text-sm transition-colors ${
+                  isActive
+                    ? 'bg-red-50 text-red-700 font-medium border-r-2 border-red-600'
+                    : 'text-slate-600 hover:bg-slate-50'
+                }`
+              }
+            >
+              📋 Palinkėjimai
+            </NavLink>
+          </>
         )}
       </nav>
       <div className="px-6 py-4 border-t">

@@ -110,6 +110,12 @@ public class MessageService {
         // Jei teisingai atspėjo – siuntėjas gauna 5 taškus
         if (correct) {
             pointService.awardGuessCorrect(message.getSender(), message);
+            notificationService.create(
+                    message.getSender(),
+                    NotificationType.GUESS_CORRECT,
+                    message.getReceiver().getFirstName() + " teisingai atspėjo jūsų palinkėjimą!",
+                    message.getId()
+            );
         }
 
         return toResponse(messageRepository.save(message));
@@ -137,7 +143,7 @@ public class MessageService {
                 message.getSender(),
                 NotificationType.MESSAGE_REACTED,
                 message.getReceiver().getFirstName() + " sureagavo į jūsų palinkėjimą: "
-                        + reaction.getEmoji(),
+                        + reaction.getEmoji() + " " + reaction.getLabel(),
                 message.getId()
         );
 

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
@@ -19,4 +20,8 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     void markAllReadByUser(@Param("user") User user);
 
     boolean existsByUserAndIsReadFalse(User user);
+
+    @Modifying
+    @Query("DELETE FROM Notification n WHERE n.createdAt < :threshold")
+    void deleteAllOlderThan(@Param("threshold") LocalDateTime threshold);
 }
