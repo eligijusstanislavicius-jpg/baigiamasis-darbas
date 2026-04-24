@@ -31,7 +31,10 @@ public class UserController {
     public ResponseEntity<Void> updateMood(@RequestBody Map<String, String> body,
                                            Authentication authentication) {
         String raw = body.get("moodStatus");
-        if (raw == null || raw.isBlank()) throw new IllegalArgumentException("Laukas 'moodStatus' yra privalomas");
+        if (raw == null || raw.isBlank()) {
+            userService.updateMoodStatus(authentication.getName(), null);
+            return ResponseEntity.ok().build();
+        }
         MoodStatus moodStatus;
         try { moodStatus = MoodStatus.valueOf(raw.toUpperCase()); }
         catch (IllegalArgumentException e) { throw new IllegalArgumentException("Neteisinga nuotaikos reikšmė: " + raw); }
@@ -43,7 +46,10 @@ public class UserController {
     public ResponseEntity<Void> updateWant(@RequestBody Map<String, String> body,
                                            Authentication authentication) {
         String raw = body.get("moodWant");
-        if (raw == null || raw.isBlank()) throw new IllegalArgumentException("Laukas 'moodWant' yra privalomas");
+        if (raw == null || raw.isBlank()) {
+            userService.updateMoodWant(authentication.getName(), null);
+            return ResponseEntity.ok().build();
+        }
         MoodWant moodWant;
         try { moodWant = MoodWant.valueOf(raw.toUpperCase()); }
         catch (IllegalArgumentException e) { throw new IllegalArgumentException("Neteisinga norų reikšmė: " + raw); }

@@ -157,7 +157,9 @@ export default function FriendsPage() {
           <div key={f.id} className="bg-white border rounded-xl px-5 py-3 flex items-center justify-between">
             <div>
               <p className="font-medium text-sm">{getFriendName(f)}</p>
-              <p className="text-xs text-slate-400">{f.relationshipTypeLabel} {f.senderMoodStatus ? `• ${f.senderUsername === JSON.parse(localStorage.getItem('user'))?.username ? f.receiverMoodStatusLabel : f.senderMoodStatusLabel}` : ''}</p>
+              <p className="text-xs text-slate-400">
+                {f.relationshipTypeLabel} • Nuotaika: {f.senderUsername === JSON.parse(localStorage.getItem('user'))?.username ? (f.receiverMoodStatusLabel || '😶 Nenustatyta') : (f.senderMoodStatusLabel || '😶 Nenustatyta')}
+              </p>
             </div>
             <button
               onClick={() => handleRemove(f.id)}

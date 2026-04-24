@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getAll } from '../api/friendships'
 import { suggest } from '../api/wishes'
-import { getAll as getFavorites } from '../api/favorites'
+import { getAll as getFavorites, add as addFavorite } from '../api/favorites'
 import { send } from '../api/messages'
 
 const SEND_MODES = [
@@ -21,23 +21,38 @@ export default function SendPage() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
+  const [savedWishes, setSavedWishes] = useState(new Set())
 
   useEffect(() => {
     getAll().then((res) => setFriends(res.data)).catch(() => {})
   }, [])
 
+  const getFriendId = (f) => {
+    const me = JSON.parse(localStorage.getItem('user'))
+    if (f.senderUsername === me?.username) return f.receiverId
+    return f.senderId
+  }
+
+  const getFriendName = (f) => {
+    const me = JSON.parse(localStorage.getItem('user'))
+    if (f.senderUsername === me?.username) return `${f.receiverFirstName} (${f.receiverUsername})`
+    return `${f.senderFirstName} (${f.senderUsername})`
+  }
+
   const handleSelectFriend = async (friend) => {
     setSelectedFriend(friend)
     setError('')
     try {
+      const friendId = getFriendId(friend)
       const [wRes, fRes] = await Promise.all([
-        suggest(friend.receiverId === undefined ? friend.senderId : friend.receiverId),
+        suggest(friendId),
         getFavorites(),
       ])
       setWishes(wRes.data)
       setFavorites(fRes.data.wishes)
-    } catch {
-      setError('Nepavyko įkelti palinkėjimų')
+      setSavedWishes(new Set(fRes.data.wishes.map((w) => w.wishId)))
+    } catch (err) {
+      setError(err.response?.data?.message || 'Nepavyko įkelti palinkėjimų')
     }
     setStep(2)
   }
@@ -45,6 +60,22 @@ export default function SendPage() {
   const handleSelectWish = (wish) => {
     setSelectedWish(wish)
     setStep(3)
+  }
+
+  const handleSave = async (e, wish) => {
+    e.stopPropagation()
+    const id = wish.id || wish.wishId
+    try {
+      await addFavorite(id)
+      setSavedWishes((prev) => new Set([...prev, id]))
+    } catch (err) {
+      const msg = err.response?.data?.message || ''
+      if (msg.includes('jau išsaugotas')) {
+        setSavedWishes((prev) => new Set([...prev, id]))
+        return
+      }
+      alert(msg || `Klaida: ${err.response?.status}`)
+    }
   }
 
   const handleSend = async () => {
@@ -63,18 +94,6 @@ export default function SendPage() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const getFriendId = (f) => {
-    const me = JSON.parse(localStorage.getItem('user'))
-    if (f.senderUsername === me?.username) return f.receiverId
-    return f.senderId
-  }
-
-  const getFriendName = (f) => {
-    const me = JSON.parse(localStorage.getItem('user'))
-    if (f.senderUsername === me?.username) return `${f.receiverFirstName} (${f.receiverUsername})`
-    return `${f.senderFirstName} (${f.senderUsername})`
   }
 
   if (success) return (
@@ -115,7 +134,9 @@ export default function SendPage() {
                 className="bg-white border rounded-xl px-5 py-3 text-left hover:border-indigo-400 hover:bg-indigo-50 transition-colors"
               >
                 <p className="font-medium">{getFriendName(f)}</p>
-                <p className="text-sm text-slate-400">{f.relationshipTypeLabel}</p>
+                <p className="text-sm text-slate-400">
+                  {f.relationshipTypeLabel} • Nuotaika: {f.senderUsername === JSON.parse(localStorage.getItem('user'))?.username ? (f.receiverMoodStatusLabel || '😶 Nenustatyta') : (f.senderMoodStatusLabel || '😶 Nenustatyta')}
+                </p>
               </button>
             ))}
           </div>
@@ -144,16 +165,32 @@ export default function SendPage() {
           </div>
           {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
           <div className="flex flex-col gap-3">
-            {(showFavorites ? favorites : wishes).map((w) => (
-              <button
-                key={w.wishId || w.id}
-                onClick={() => handleSelectWish(w)}
-                className="bg-white border rounded-xl px-5 py-4 text-left hover:border-indigo-400 hover:bg-indigo-50 transition-colors"
-              >
-                <p className="font-medium">{w.text}</p>
-                <p className="text-sm text-slate-400 mt-1">{w.toneLabel}</p>
-              </button>
-            ))}
+            {(showFavorites ? favorites : wishes).map((w) => {
+              const id = w.id || w.wishId
+              const saved = savedWishes.has(id)
+              return (
+                <div
+                  key={id}
+                  className="bg-white border rounded-xl px-5 py-4 flex items-center gap-3 hover:border-indigo-400 hover:bg-indigo-50 transition-colors cursor-pointer"
+                  onClick={() => handleSelectWish(w)}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium">{w.text}</p>
+                    <p className="text-sm text-slate-400 mt-1">{w.toneLabel}</p>
+                  </div>
+                  {!showFavorites && (
+                    <button
+                      onClick={(e) => handleSave(e, w)}
+                      title={saved ? 'Jau išsaugota' : 'Išsaugoti į mano sąrašą'}
+                      className={`shrink-0 text-lg transition-transform hover:scale-125 ${saved ? 'opacity-40 cursor-default' : ''}`}
+                      disabled={saved}
+                    >
+                      {saved ? '❤️' : '🤍'}
+                    </button>
+                  )}
+                </div>
+              )
+            })}
             {(showFavorites ? favorites : wishes).length === 0 && (
               <p className="text-slate-400 text-sm">Nieko nėra.</p>
             )}

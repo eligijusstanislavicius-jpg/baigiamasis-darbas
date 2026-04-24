@@ -9,6 +9,7 @@ import com.feelsent.model.Friendship;
 import com.feelsent.model.Message;
 import com.feelsent.model.User;
 import com.feelsent.model.Wish;
+import com.feelsent.repository.FavoriteWishRepository;
 import com.feelsent.repository.FriendshipRepository;
 import com.feelsent.repository.MessageRepository;
 import com.feelsent.repository.UserRepository;
@@ -31,9 +32,13 @@ public class WishService {
     private final UserRepository userRepository;
     private final FriendshipRepository friendshipRepository;
     private final MessageRepository messageRepository;
+    private final FavoriteWishRepository favoriteWishRepository;
 
     // Automatiškai pasiūlo 3 palinkėjimus pagal draugo moodWant + ryšio tipą
-    // Jei visi palinkėjimai jau buvo siųsti – pradeda iš naujo (ignoruoja istoriją)
+    // Filtravimo lygiai:
+    //   1. Nesiūlyti jau išsiųstų ŠI draugui + jau išsaugotų siuntėjo mėgstamuose
+    //   2. Jei nelieka 3 – leisti mėgstamas (bet ne siųstas)
+    //   3. Jei visi šio tono siųsti – imti iš viso aktyvaus sąrašo (reset)
     public List<WishResponse> suggestWishes(String senderEmail, Long friendId) {
         User sender = userRepository.findByEmail(senderEmail)
                 .orElseThrow(() -> new UserNotFoundException("Siuntėjas nerastas"));
@@ -44,21 +49,46 @@ public class WishService {
         String relationshipType = getRelationshipType(sender, friend);
         WishTone tone = moodWantToTone(friend.getMoodWant());
 
-        // Visi tinkami pagal toną ir ryšio tipą
         List<Wish> candidates = wishRepository.findByToneAndRelationshipTypeOrAll(tone, relationshipType);
 
-        // Filtruojame jau siųstus
-        Set<Long> alreadySentIds = getAlreadySentWishIds(sender, friend);
+        Set<Long> sentIds = getAlreadySentWishIds(sender, friend);
+        Set<Long> favoriteIds = favoriteWishRepository.findAllByUser(sender)
+                .stream()
+                .map(fw -> fw.getWish().getId())
+                .collect(Collectors.toSet());
+
+        // 1 lygis: tinkamas tonas + ryšys, be siųstų ir be mėgstamų
         List<Wish> available = candidates.stream()
-                .filter(w -> !alreadySentIds.contains(w.getId()))
+                .filter(w -> !sentIds.contains(w.getId()) && !favoriteIds.contains(w.getId()))
                 .collect(Collectors.toList());
 
-        // Jei visi išsiųsti – pradedame iš naujo (pilnas pool'as)
-        if (available.isEmpty()) {
-            available = new java.util.ArrayList<>(candidates);
+        // 2 lygis: visi aktyvūs šio ryšio tipo, be siųstų ir be mėgstamų (kiti tonai)
+        if (available.size() < SUGGEST_COUNT) {
+            List<Wish> broader = wishRepository.findByRelationshipTypeAndActiveTrue(relationshipType);
+            available = broader.stream()
+                    .filter(w -> !sentIds.contains(w.getId()) && !favoriteIds.contains(w.getId()))
+                    .collect(Collectors.toList());
         }
 
-        // Atsitiktinai išmaišome ir imame pirmus SUGGEST_COUNT
+        // 3 lygis: visi aktyvūs, be siųstų ir be mėgstamų (bet koks ryšys)
+        if (available.size() < SUGGEST_COUNT) {
+            available = wishRepository.findAllByActiveTrue().stream()
+                    .filter(w -> !sentIds.contains(w.getId()) && !favoriteIds.contains(w.getId()))
+                    .collect(Collectors.toList());
+        }
+
+        // 4 lygis: reset – ignoruoti siuntimo istoriją, bet vis dar ne mėgstamas
+        if (available.size() < SUGGEST_COUNT) {
+            available = wishRepository.findAllByActiveTrue().stream()
+                    .filter(w -> !favoriteIds.contains(w.getId()))
+                    .collect(Collectors.toList());
+        }
+
+        // 5 lygis: viskas išsaugota mėgstamuose – leisti bet ką
+        if (available.isEmpty()) {
+            available = new java.util.ArrayList<>(wishRepository.findAllByActiveTrue());
+        }
+
         Collections.shuffle(available);
         return available.stream()
                 .limit(SUGGEST_COUNT)

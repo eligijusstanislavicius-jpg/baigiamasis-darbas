@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Sidebar from './components/Sidebar'
+import MoodPromptModal from './components/MoodPromptModal'
 
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
@@ -43,6 +44,8 @@ function AdminRoute({ children }) {
 function AppRoutes() {
   const { token } = useAuth()
   return (
+    <>
+    <MoodPromptModal />
     <Routes>
       <Route path="/login" element={token ? <Navigate to="/inbox" replace /> : <LoginPage />} />
       <Route path="/register" element={token ? <Navigate to="/inbox" replace /> : <RegisterPage />} />
@@ -56,6 +59,7 @@ function AppRoutes() {
       <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
       <Route path="*" element={<Navigate to={token ? '/inbox' : '/login'} replace />} />
     </Routes>
+    </>
   )
 }
 

@@ -12,22 +12,31 @@ const TYPE_ICON = {
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState([])
+  const [expanded, setExpanded] = useState(null)
 
   const load = async () => {
-    const res = await getAll()
-    setNotifications(res.data)
+    try {
+      const res = await getAll()
+      setNotifications(res.data)
+    } catch {}
   }
 
   useEffect(() => { load() }, [])
 
   const handleMarkRead = async (id) => {
-    await markRead(id)
-    setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, isRead: true } : n))
+    try {
+      await markRead(id)
+      setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, isRead: true } : n))
+    } catch (err) {
+      alert(err.response?.data?.message || 'Nepavyko pažymėti kaip perskaitytą')
+    }
   }
 
   const handleMarkAll = async () => {
-    await markAllRead()
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
+    try {
+      await markAllRead()
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
+    } catch {}
   }
 
   const unread = notifications.filter((n) => !n.isRead).length
@@ -51,25 +60,42 @@ export default function NotificationsPage() {
         {notifications.map((n) => (
           <div
             key={n.id}
-            className={`bg-white border rounded-xl px-5 py-4 flex items-start gap-3 ${
+            className={`bg-white border rounded-xl px-5 py-4 ${
               !n.isRead ? 'border-indigo-200 bg-indigo-50' : ''
             }`}
           >
-            <span className="text-xl mt-0.5">{TYPE_ICON[n.type] || '📌'}</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm text-slate-800">{n.text}</p>
-              <p className="text-xs text-slate-400 mt-1">
-                {new Date(n.createdAt).toLocaleString('lt-LT')}
-              </p>
+            <div className="flex items-start gap-3">
+              <span className="text-xl mt-0.5">{TYPE_ICON[n.type] || '📌'}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-slate-800">{n.text}</p>
+                <p className="text-xs text-slate-400 mt-1">
+                  {new Date(n.createdAt).toLocaleString('lt-LT')}
+                </p>
+                {expanded === n.id && n.type === 'MESSAGE_REACTED' && (
+                  <div className="mt-2 text-sm text-slate-600 bg-white rounded-lg px-3 py-2 border">
+                    <p>{n.text}</p>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {n.type === 'MESSAGE_REACTED' && (
+                  <button
+                    onClick={() => setExpanded(expanded === n.id ? null : n.id)}
+                    className="text-xs text-slate-400 hover:text-slate-600"
+                  >
+                    {expanded === n.id ? '▲' : '▼'}
+                  </button>
+                )}
+                {!n.isRead && (
+                  <button
+                    onClick={() => handleMarkRead(n.id)}
+                    className="text-xs text-indigo-600 hover:underline"
+                  >
+                    Perskaityti
+                  </button>
+                )}
+              </div>
             </div>
-            {!n.isRead && (
-              <button
-                onClick={() => handleMarkRead(n.id)}
-                className="text-xs text-indigo-600 hover:underline shrink-0"
-              >
-                Perskaityti
-              </button>
-            )}
           </div>
         ))}
       </div>

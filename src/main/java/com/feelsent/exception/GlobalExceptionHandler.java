@@ -73,10 +73,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex) {
-        log.error("Duomenų vientisumo klaida: {}", ex.getMessage());
+        String cause = ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : ex.getMessage();
+        log.error("Duomenų vientisumo klaida: {}", cause);
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
-                .body(new ErrorResponse("CONFLICT", "Įrašas jau egzistuoja arba yra susijusių įrašų"));
+                .body(new ErrorResponse("CONFLICT", "DB klaida: " + cause));
     }
 
     @ExceptionHandler(AccessDeniedException.class)

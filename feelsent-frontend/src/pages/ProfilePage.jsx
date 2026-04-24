@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getMe, updateMood, updateWant, getPoints } from '../api/users'
+import { getMe, updateMood, updateWant, clearMood, clearWant, getPoints } from '../api/users'
 
 const MOODS = [
   { value: 'HAPPY', label: '😊 Laimingas' },
@@ -27,6 +27,8 @@ const WANTS = [
   { value: 'JUST_BE_THERE', label: '💙 Tyliai šalia' },
 ]
 
+const stampMoodTime = () => localStorage.setItem('moodSetAt', Date.now().toString())
+
 export default function ProfilePage() {
   const [profile, setProfile] = useState(null)
   const [points, setPoints] = useState(null)
@@ -44,6 +46,18 @@ export default function ProfilePage() {
     try {
       await updateMood(value)
       setProfile((p) => ({ ...p, moodStatus: value }))
+      stampMoodTime()
+    } finally {
+      setSaving('')
+    }
+  }
+
+  const handleClearMood = async () => {
+    setSaving('mood')
+    try {
+      await clearMood()
+      setProfile((p) => ({ ...p, moodStatus: null }))
+      localStorage.removeItem('moodSetAt')
     } finally {
       setSaving('')
     }
@@ -54,6 +68,17 @@ export default function ProfilePage() {
     try {
       await updateWant(value)
       setProfile((p) => ({ ...p, moodWant: value }))
+      stampMoodTime()
+    } finally {
+      setSaving('')
+    }
+  }
+
+  const handleClearWant = async () => {
+    setSaving('want')
+    try {
+      await clearWant()
+      setProfile((p) => ({ ...p, moodWant: null }))
     } finally {
       setSaving('')
     }
@@ -85,7 +110,17 @@ export default function ProfilePage() {
       </div>
 
       <div className="bg-white border rounded-xl p-6 mb-6">
-        <h3 className="font-semibold mb-3">Kaip jaučiuosi {saving === 'mood' ? '(saugoma...)' : ''}</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold">Kaip jaučiuosi {saving === 'mood' ? '(saugoma...)' : ''}</h3>
+          {profile.moodStatus && (
+            <button
+              onClick={handleClearMood}
+              className="text-xs text-slate-400 hover:text-red-500 transition-colors"
+            >
+              ✕ Išvalyti
+            </button>
+          )}
+        </div>
         <div className="grid grid-cols-2 gap-2">
           {MOODS.map((m) => (
             <button
@@ -104,7 +139,17 @@ export default function ProfilePage() {
       </div>
 
       <div className="bg-white border rounded-xl p-6">
-        <h3 className="font-semibold mb-3">Ko norėčiau gauti {saving === 'want' ? '(saugoma...)' : ''}</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold">Ko norėčiau gauti {saving === 'want' ? '(saugoma...)' : ''}</h3>
+          {profile.moodWant && (
+            <button
+              onClick={handleClearWant}
+              className="text-xs text-slate-400 hover:text-red-500 transition-colors"
+            >
+              ✕ Išvalyti
+            </button>
+          )}
+        </div>
         <div className="grid grid-cols-2 gap-2">
           {WANTS.map((w) => (
             <button
