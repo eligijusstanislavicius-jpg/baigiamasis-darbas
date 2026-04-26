@@ -15,7 +15,7 @@ export default function AdminUsersPage() {
 
   const load = async () => {
     const res = await getUsers()
-    setUsers(res.data.filter(u => u.role === 'USER'))
+    setUsers(res.data)
   }
 
   useEffect(() => { load() }, [])
@@ -51,7 +51,12 @@ export default function AdminUsersPage() {
           <div key={u.id} className="bg-white border rounded-xl p-5">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="font-semibold">{u.firstName} {u.lastName}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold">{u.firstName} {u.lastName}</p>
+                  {u.role === 'ADMIN' && (
+                    <span className="px-1.5 py-0.5 bg-violet-100 text-violet-700 text-xs font-semibold rounded-full">Admin</span>
+                  )}
+                </div>
                 <p className="text-xs text-slate-400 mt-0.5">
                   {lastSeenLabel(u.lastLoginAt)} · {u.points} taškų
                 </p>
@@ -63,12 +68,14 @@ export default function AdminUsersPage() {
                 >
                   Pranešimas
                 </button>
-                <button
-                  onClick={() => handleDelete(u.id)}
-                  className="px-3 py-1.5 text-xs border border-red-200 rounded-lg text-red-600 hover:bg-red-50"
-                >
-                  Ištrinti
-                </button>
+                {u.role !== 'ADMIN' && (
+                  <button
+                    onClick={() => handleDelete(u.id)}
+                    className="px-3 py-1.5 text-xs border border-red-200 rounded-lg text-red-600 hover:bg-red-50"
+                  >
+                    Ištrinti
+                  </button>
+                )}
               </div>
             </div>
 
