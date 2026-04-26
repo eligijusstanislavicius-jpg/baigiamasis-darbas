@@ -20,14 +20,12 @@ export default function LimitsPage() {
 
   const getFriendId = (f) => {
     const me = JSON.parse(localStorage.getItem('user'))
-    return f.senderUsername === me?.username ? f.receiverId : f.senderId
+    return f.senderId === me?.id ? f.receiverId : f.senderId
   }
 
   const getFriendName = (f) => {
     const me = JSON.parse(localStorage.getItem('user'))
-    return f.senderUsername === me?.username
-      ? `${f.receiverFirstName} (${f.receiverUsername})`
-      : `${f.senderFirstName} (${f.senderUsername})`
+    return f.senderId === me?.id ? f.receiverFirstName : f.senderFirstName
   }
 
   const handleSet = async () => {
@@ -93,7 +91,7 @@ export default function LimitsPage() {
         {limits.map((l) => (
           <div key={l.id} className="bg-white border rounded-xl px-5 py-3 flex items-center justify-between">
             <div>
-              <p className="font-medium text-sm">{l.senderUsername}</p>
+              <p className="font-medium text-sm">{l.senderFirstName}</p>
               <p className="text-xs text-slate-400">Maks. {l.dailyLimit} žinutė/ų per dieną</p>
             </div>
             <button

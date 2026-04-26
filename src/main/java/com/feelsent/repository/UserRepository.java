@@ -17,11 +17,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByEmail(String email); // ieško vartotojo pagal el. paštą (prisijungimui)
 
-    Optional<User> findByUsername(String username); // ieško pagal vartotojo vardą
-
     boolean existsByEmail(String email); // tikrina ar el. paštas jau užregistruotas
 
-    boolean existsByUsername(String username); // tikrina ar vartotojo vardas jau užimtas
+    Optional<User> findByVerificationToken(String token);
 
     // Vartotojai, kurie nesilankė nuo nurodyto laiko – re-engagement tikrinimui (su paginacija)
     List<User> findAllByLastLoginAtBefore(LocalDateTime threshold, Pageable pageable);

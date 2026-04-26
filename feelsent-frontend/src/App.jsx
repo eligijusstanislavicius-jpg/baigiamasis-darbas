@@ -13,6 +13,8 @@ import ProfilePage from './pages/ProfilePage'
 import NotificationsPage from './pages/NotificationsPage'
 import LimitsPage from './pages/LimitsPage'
 import AdminPage from './pages/AdminPage'
+import AdminUsersPage from './pages/AdminUsersPage'
+import ContactPage from './pages/ContactPage'
 
 function PrivateLayout({ children }) {
   const { token } = useAuth()
@@ -56,8 +58,10 @@ function AppRoutes() {
       <Route path="/profile" element={<PrivateLayout><ProfilePage /></PrivateLayout>} />
       <Route path="/notifications" element={<PrivateLayout><NotificationsPage /></PrivateLayout>} />
       <Route path="/limits" element={<PrivateLayout><LimitsPage /></PrivateLayout>} />
+      <Route path="/contact" element={<PrivateLayout><ContactPage /></PrivateLayout>} />
       <Route path="/admin" element={<AdminRoute><AdminPage defaultTab="users" /></AdminRoute>} />
       <Route path="/admin/wishes" element={<AdminRoute><AdminPage defaultTab="wishes" /></AdminRoute>} />
+      <Route path="/admin/users" element={<AdminRoute><AdminUsersPage /></AdminRoute>} />
       <Route path="*" element={<Navigate to={token ? '/inbox' : '/login'} replace />} />
     </Routes>
     </>

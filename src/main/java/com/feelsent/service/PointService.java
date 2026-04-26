@@ -1,56 +1,36 @@
 package com.feelsent.service;
 
-import com.feelsent.enums.PointReason;
-import com.feelsent.model.Message;
-import com.feelsent.model.PointTransaction;
 import com.feelsent.model.User;
-import com.feelsent.repository.PointTransactionRepository;
 import com.feelsent.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 public class PointService {
 
-    // Taškų kiekiai pagal verslo taisykles
     private static final int POINTS_GUESS_CORRECT = 5;
+    private static final int POINTS_GUESS_CORRECT_RECEIVER = 3;
     private static final int POINTS_REACTION_RECEIVED = 10;
 
-    private final PointTransactionRepository pointTransactionRepository;
     private final UserRepository userRepository;
 
-    // Prideda 5 taškus siuntėjui kai gavėjas teisingai atspėjo toną
+    // 5 taškai siuntėjui kai gavėjas teisingai atspėjo toną
     @Transactional
-    public void awardGuessCorrect(User sender, Message message) {
-        award(sender, message, POINTS_GUESS_CORRECT, PointReason.GUESS_CORRECT);
+    public void awardGuessCorrect(User sender) {
+        userRepository.incrementPoints(sender.getId(), POINTS_GUESS_CORRECT);
     }
 
-    // Prideda 10 taškų siuntėjui kai gavėjas sureagavo į žinutę
+    // 3 taškai gavėjui kai jis teisingai atspėjo toną
     @Transactional
-    public void awardReactionReceived(User sender, Message message) {
-        award(sender, message, POINTS_REACTION_RECEIVED, PointReason.REACTION_RECEIVED);
+    public void awardGuessCorrectForReceiver(User receiver) {
+        userRepository.incrementPoints(receiver.getId(), POINTS_GUESS_CORRECT_RECEIVER);
     }
 
-    // Grąžina vartotojo taškų istoriją
-    public List<PointTransaction> getHistory(User user) {
-        return pointTransactionRepository.findAllByUser(user);
-    }
-
-    // incrementPoints naudoja SQL UPDATE ... + :points – apsaugo nuo race condition
-    private void award(User user, Message message, int points, PointReason reason) {
-        PointTransaction transaction = new PointTransaction();
-        transaction.setUser(user);
-        transaction.setMessage(message);
-        transaction.setPoints(points);
-        transaction.setReason(reason);
-        transaction.setCreatedAt(LocalDateTime.now());
-        pointTransactionRepository.save(transaction);
-
-        userRepository.incrementPoints(user.getId(), points);
+    // 10 taškų siuntėjui kai gavėjas sureagavo į žinutę
+    @Transactional
+    public void awardReactionReceived(User sender) {
+        userRepository.incrementPoints(sender.getId(), POINTS_REACTION_RECEIVED);
     }
 }

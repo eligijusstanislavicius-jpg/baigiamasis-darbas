@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class WishService {
 
-    private static final int SUGGEST_COUNT = 3; // kiek pasiūlymų grąžiname siuntėjui
+
 
     private final WishRepository wishRepository;
     private final UserRepository userRepository;
@@ -39,7 +39,7 @@ public class WishService {
     //   1. Nesiūlyti jau išsiųstų ŠI draugui + jau išsaugotų siuntėjo mėgstamuose
     //   2. Jei nelieka 3 – leisti mėgstamas (bet ne siųstas)
     //   3. Jei visi šio tono siųsti – imti iš viso aktyvaus sąrašo (reset)
-    public List<WishResponse> suggestWishes(String senderEmail, Long friendId) {
+    public List<WishResponse> suggestWishes(String senderEmail, Long friendId, int count) {
         User sender = userRepository.findByEmail(senderEmail)
                 .orElseThrow(() -> new UserNotFoundException("Siuntėjas nerastas"));
 
@@ -63,7 +63,7 @@ public class WishService {
                 .collect(Collectors.toList());
 
         // 2 lygis: visi aktyvūs šio ryšio tipo, be siųstų ir be mėgstamų (kiti tonai)
-        if (available.size() < SUGGEST_COUNT) {
+        if (available.size() < count) {
             List<Wish> broader = wishRepository.findByRelationshipTypeAndActiveTrue(relationshipType);
             available = broader.stream()
                     .filter(w -> !sentIds.contains(w.getId()) && !favoriteIds.contains(w.getId()))
@@ -71,14 +71,14 @@ public class WishService {
         }
 
         // 3 lygis: visi aktyvūs, be siųstų ir be mėgstamų (bet koks ryšys)
-        if (available.size() < SUGGEST_COUNT) {
+        if (available.size() < count) {
             available = wishRepository.findAllByActiveTrue().stream()
                     .filter(w -> !sentIds.contains(w.getId()) && !favoriteIds.contains(w.getId()))
                     .collect(Collectors.toList());
         }
 
         // 4 lygis: reset – ignoruoti siuntimo istoriją, bet vis dar ne mėgstamas
-        if (available.size() < SUGGEST_COUNT) {
+        if (available.size() < count) {
             available = wishRepository.findAllByActiveTrue().stream()
                     .filter(w -> !favoriteIds.contains(w.getId()))
                     .collect(Collectors.toList());
@@ -91,7 +91,7 @@ public class WishService {
 
         Collections.shuffle(available);
         return available.stream()
-                .limit(SUGGEST_COUNT)
+                .limit(count)
                 .map(this::toResponse)
                 .toList();
     }
@@ -151,12 +151,10 @@ public class WishService {
 
     // Randa ryšio tipą tarp siuntėjo ir gavėjo pagal draugystės įrašą
     private String getRelationshipType(User sender, User receiver) {
-        return friendshipRepository.findBySenderAndReceiver(sender, receiver)
-                .filter(f -> f.getStatus() == FriendshipStatus.ACCEPTED)
-                .map(f -> f.getRelationshipType().name())
-                .orElseGet(() -> friendshipRepository.findBySenderAndReceiver(receiver, sender)
-                        .filter(f -> f.getStatus() == FriendshipStatus.ACCEPTED)
-                        .map(f -> f.getRelationshipType().name())
+        return friendshipRepository.findFirstBySenderAndReceiverAndStatus(sender, receiver, FriendshipStatus.ACCEPTED)
+                .map(f -> f.getSenderRelationshipType().name())
+                .orElseGet(() -> friendshipRepository.findFirstBySenderAndReceiverAndStatus(receiver, sender, FriendshipStatus.ACCEPTED)
+                        .map(f -> f.getSenderRelationshipType().name())
                         .orElseThrow(() -> new IllegalArgumentException("Vartotojai nėra draugai")));
     }
 

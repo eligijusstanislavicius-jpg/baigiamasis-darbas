@@ -9,6 +9,6 @@ import lombok.Data;
 public class MessageLimitResponse {
     private Long id;
     private Long senderId;
-    private String senderUsername;
+    private String senderFirstName;
     private Integer dailyLimit; // kiek žinučių per dieną leidžiama siųsti
 }

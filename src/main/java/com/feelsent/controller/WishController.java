@@ -1,7 +1,6 @@
 package com.feelsent.controller;
 
 import com.feelsent.dto.WishResponse;
-import com.feelsent.enums.WishTone;
 import com.feelsent.service.WishService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,19 +21,11 @@ public class WishController {
     // Tonas parenkamas pagal draugo moodWant, filtruojami jau siųsti
     // Jei visi išsiųsti – pradeda iš naujo
     @GetMapping("/suggest/{friendId}")
-    public ResponseEntity<List<WishResponse>> suggest(@PathVariable Long friendId,
-                                                      Authentication authentication) {
-        return ResponseEntity.ok(wishService.suggestWishes(authentication.getName(), friendId));
-    }
-
-    // GET /api/wishes?receiverId=2&tone=FUNNY – palinkėjimai siuntimui konkrečiam draugui
-    // Grąžina tik tinkamus (ryšio tipas + tonas + nesikartoja)
-    @GetMapping
-    public ResponseEntity<List<WishResponse>> getWishesForSending(
-            @RequestParam Long receiverId,
-            @RequestParam WishTone tone,
+    public ResponseEntity<List<WishResponse>> suggest(
+            @PathVariable Long friendId,
+            @RequestParam(defaultValue = "3") int count,
             Authentication authentication) {
-        return ResponseEntity.ok(wishService.getWishesForSending(authentication.getName(), receiverId, tone));
+        return ResponseEntity.ok(wishService.suggestWishes(authentication.getName(), friendId, count));
     }
 
     // GET /api/wishes/{id} – vienas palinkėjimas pagal ID (GUESS režimui – po atspėjimo)

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getAll, markRead, markAllRead } from '../api/notifications'
 
 const TYPE_ICON = {
@@ -8,11 +9,13 @@ const TYPE_ICON = {
   MESSAGE_REACTED: '❤️',
   GUESS_CORRECT: '🎯',
   MESSAGE_EXPIRED: '⌛',
+  FRIEND_REMOVED: '👋',
+  MESSAGE_LIMIT_SET: '🚫',
 }
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState([])
-  const [expanded, setExpanded] = useState(null)
+  const navigate = useNavigate()
 
   const load = async () => {
     try {
@@ -27,9 +30,7 @@ export default function NotificationsPage() {
     try {
       await markRead(id)
       setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, isRead: true } : n))
-    } catch (err) {
-      alert(err.response?.data?.message || 'Nepavyko pažymėti kaip perskaitytą')
-    }
+    } catch {}
   }
 
   const handleMarkAll = async () => {
@@ -38,6 +39,13 @@ export default function NotificationsPage() {
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
     } catch {}
   }
+
+  const handleReadMessage = async (n) => {
+    await handleMarkRead(n.id)
+    navigate('/inbox')
+  }
+
+  const isMessageUnread = (n) => n.messageStatus === 'SENT'
 
   const unread = notifications.filter((n) => !n.isRead).length
 
@@ -71,30 +79,22 @@ export default function NotificationsPage() {
                 <p className="text-xs text-slate-400 mt-1">
                   {new Date(n.createdAt).toLocaleString('lt-LT')}
                 </p>
-                {expanded === n.id && n.type === 'MESSAGE_REACTED' && (
-                  <div className="mt-2 text-sm text-slate-600 bg-white rounded-lg px-3 py-2 border">
-                    <p>{n.text}</p>
-                  </div>
-                )}
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                {n.type === 'MESSAGE_REACTED' && (
-                  <button
-                    onClick={() => setExpanded(expanded === n.id ? null : n.id)}
-                    className="text-xs text-slate-400 hover:text-slate-600"
-                  >
-                    {expanded === n.id ? '▲' : '▼'}
-                  </button>
-                )}
-                {!n.isRead && (
-                  <button
-                    onClick={() => handleMarkRead(n.id)}
-                    className="text-xs text-indigo-600 hover:underline"
-                  >
-                    Perskaityti
-                  </button>
-                )}
-              </div>
+
+              {n.type === 'NEW_MESSAGE' && (
+                <div className="shrink-0">
+                  {isMessageUnread(n) ? (
+                    <button
+                      onClick={() => handleReadMessage(n)}
+                      className="text-xs text-indigo-600 hover:underline font-medium"
+                    >
+                      Perskaityti →
+                    </button>
+                  ) : (
+                    <span className="text-xs text-slate-400">Perskaityta</span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ))}

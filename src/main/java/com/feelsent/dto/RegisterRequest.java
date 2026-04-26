@@ -9,9 +9,6 @@ import lombok.Data;
 @Data
 public class RegisterRequest {
 
-    @NotBlank(message = "Vartotojo vardas negali būti tuščias")
-    private String username;
-
     @NotBlank(message = "Vardas negali būti tuščias")
     private String firstName;
 

@@ -59,6 +59,20 @@ public class EmailService {
         );
     }
 
+    // El. pašto patvirtinimo laiškas po registracijos
+    @Async
+    public void sendVerificationEmail(String toEmail, String username, String token, String baseUrl) {
+        send(
+                toEmail,
+                "Patvirtinkite savo el. paštą – FeelSent",
+                "Sveiki, " + username + "!\n\n" +
+                "Norėdami užbaigti registraciją, paspauskite šią nuorodą:\n\n" +
+                baseUrl + "/api/auth/verify?token=" + token + "\n\n" +
+                "Nuoroda galioja neribotą laiką.\n\n" +
+                "FeelSent komanda"
+        );
+    }
+
     // Bendrinis siuntimo metodas – klaidos nepertraukia pagrindinio srauto
     private void send(String to, String subject, String text) {
         try {

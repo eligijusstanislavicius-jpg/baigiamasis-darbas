@@ -24,9 +24,6 @@ public class User {
     @EqualsAndHashCode.Include
     private Long id;
 
-    @Column(unique = true, nullable = false) // negali būti du vartotojai su tuo pačiu username
-    private String username;
-
     @Column(nullable = false)
     private String firstName; // rodomas draugams šalia nuotaikos
 
@@ -54,4 +51,7 @@ public class User {
 
     private LocalDateTime createdAt;    // kada sukurtas vartotojas
     private LocalDateTime lastLoginAt;  // paskutinis prisijungimas – naudojama re-engagement logikoje
+
+    private boolean emailVerified = false;
+    private String verificationToken;
 }

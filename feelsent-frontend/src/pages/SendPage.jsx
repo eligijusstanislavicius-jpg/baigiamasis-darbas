@@ -3,6 +3,8 @@ import { getAll } from '../api/friendships'
 import { suggest } from '../api/wishes'
 import { getAll as getFavorites, add as addFavorite } from '../api/favorites'
 import { send } from '../api/messages'
+import { getLimitInfo } from '../api/limits'
+import { getMyUnique } from '../api/uniqueWishes'
 
 const SEND_MODES = [
   { value: 'SIMPLE', label: '📨 Paprastas', desc: 'Gavėjas iš karto mato tekstą' },
@@ -13,8 +15,10 @@ export default function SendPage() {
   const [step, setStep] = useState(1)
   const [friends, setFriends] = useState([])
   const [selectedFriend, setSelectedFriend] = useState(null)
-  const [wishes, setWishes] = useState([])
+  const [wishCache, setWishCache] = useState([])
+  const [wishPage, setWishPage] = useState(0)
   const [favorites, setFavorites] = useState([])
+  const [uniqueFavorites, setUniqueFavorites] = useState([])
   const [showFavorites, setShowFavorites] = useState(false)
   const [selectedWish, setSelectedWish] = useState(null)
   const [sendMode, setSendMode] = useState('SIMPLE')
@@ -22,40 +26,56 @@ export default function SendPage() {
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
   const [savedWishes, setSavedWishes] = useState(new Set())
+  const [limitInfo, setLimitInfo] = useState(null)
 
   useEffect(() => {
     getAll().then((res) => setFriends(res.data)).catch(() => {})
   }, [])
 
+  const getLimitLabel = () => {
+    if (!limitInfo) return null
+    if (!limitInfo.limited) return 'Žinučių: Neapribota'
+    return `Žinučių: ${limitInfo.remaining} iš ${limitInfo.dailyLimit} liko (per 24 val.)`
+  }
+
   const getFriendId = (f) => {
     const me = JSON.parse(localStorage.getItem('user'))
-    if (f.senderUsername === me?.username) return f.receiverId
+    if (f.senderId === me?.id) return f.receiverId
     return f.senderId
   }
 
   const getFriendName = (f) => {
     const me = JSON.parse(localStorage.getItem('user'))
-    if (f.senderUsername === me?.username) return `${f.receiverFirstName} (${f.receiverUsername})`
-    return `${f.senderFirstName} (${f.senderUsername})`
+    if (f.senderId === me?.id) return f.receiverFirstName
+    return f.senderFirstName
   }
 
   const handleSelectFriend = async (friend) => {
     setSelectedFriend(friend)
+    setLimitInfo(null)
     setError('')
+    setWishPage(0)
     try {
       const friendId = getFriendId(friend)
-      const [wRes, fRes] = await Promise.all([
-        suggest(friendId),
+      const [wRes, fRes, lRes, uRes] = await Promise.all([
+        suggest(friendId, 9),
         getFavorites(),
+        getLimitInfo(friendId),
+        getMyUnique(),
       ])
-      setWishes(wRes.data)
+      setWishCache(wRes.data)
       setFavorites(fRes.data.wishes)
       setSavedWishes(new Set(fRes.data.wishes.map((w) => w.wishId)))
+      setLimitInfo(lRes.data)
+      setUniqueFavorites(uRes.data.map((u) => ({ ...u, isUnique: true })))
     } catch (err) {
       setError(err.response?.data?.message || 'Nepavyko įkelti palinkėjimų')
     }
     setStep(2)
   }
+
+  const wishes = wishCache.slice(wishPage * 3, wishPage * 3 + 3)
+  const maxPage = Math.floor((wishCache.length - 1) / 3)
 
   const handleSelectWish = (wish) => {
     setSelectedWish(wish)
@@ -83,7 +103,13 @@ export default function SendPage() {
     setError('')
     try {
       const friendId = getFriendId(selectedFriend)
-      await send({ receiverId: friendId, wishId: selectedWish.wishId || selectedWish.id, sendMode })
+      const payload = { receiverId: friendId, sendMode }
+      if (selectedWish.isUnique) {
+        payload.uniqueWishId = selectedWish.id
+      } else {
+        payload.wishId = selectedWish.wishId || selectedWish.id
+      }
+      await send(payload)
       setSuccess(true)
       setStep(1)
       setSelectedFriend(null)
@@ -135,7 +161,7 @@ export default function SendPage() {
               >
                 <p className="font-medium">{getFriendName(f)}</p>
                 <p className="text-sm text-slate-400">
-                  {f.relationshipTypeLabel} • Nuotaika: {f.senderUsername === JSON.parse(localStorage.getItem('user'))?.username ? (f.receiverMoodStatusLabel || '😶 Nenustatyta') : (f.senderMoodStatusLabel || '😶 Nenustatyta')}
+                  {f.relationshipTypeLabel} • Nuotaika: {f.senderId === JSON.parse(localStorage.getItem('user'))?.id ? (f.receiverMoodStatusLabel || '😶 Nenustatyta') : (f.senderMoodStatusLabel || '😶 Nenustatyta')}
                 </p>
               </button>
             ))}
@@ -147,7 +173,14 @@ export default function SendPage() {
         <div className="max-w-lg">
           <div className="flex items-center gap-3 mb-4">
             <button onClick={() => setStep(1)} className="text-slate-400 hover:text-slate-600">← Atgal</button>
-            <h2 className="text-xl font-bold">Pasirink palinkėjimą</h2>
+            <div>
+              <h2 className="text-xl font-bold">Pasirink palinkėjimą</h2>
+              {getLimitLabel() && (
+                <p className={`text-xs mt-0.5 ${limitInfo?.limited && limitInfo?.remaining === 0 ? 'text-red-500' : 'text-slate-400'}`}>
+                  {getLimitLabel()}
+                </p>
+              )}
+            </div>
           </div>
           <div className="flex gap-3 mb-4">
             <button
@@ -160,39 +193,82 @@ export default function SendPage() {
               onClick={() => setShowFavorites(true)}
               className={`px-4 py-1.5 rounded-full text-sm font-medium ${showFavorites ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}
             >
-              Mano sąrašas ({favorites.length})
+              Mano sąrašas ({favorites.length + uniqueFavorites.length})
             </button>
           </div>
           {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
           <div className="flex flex-col gap-3">
-            {(showFavorites ? favorites : wishes).map((w) => {
-              const id = w.id || w.wishId
-              const saved = savedWishes.has(id)
-              return (
-                <div
-                  key={id}
-                  className="bg-white border rounded-xl px-5 py-4 flex items-center gap-3 hover:border-indigo-400 hover:bg-indigo-50 transition-colors cursor-pointer"
-                  onClick={() => handleSelectWish(w)}
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium">{w.text}</p>
-                    <p className="text-sm text-slate-400 mt-1">{w.toneLabel}</p>
+            {showFavorites ? (
+              <>
+                {uniqueFavorites.map((w) => (
+                  <div
+                    key={'u-' + w.id}
+                    className="bg-violet-50 border border-violet-200 rounded-xl px-5 py-4 flex items-center gap-3 hover:border-violet-400 hover:bg-violet-100 transition-colors cursor-pointer"
+                    onClick={() => handleSelectWish(w)}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium">{w.text}</p>
+                      <p className="text-sm text-violet-400 mt-1">Asmeninis</p>
+                    </div>
                   </div>
-                  {!showFavorites && (
-                    <button
-                      onClick={(e) => handleSave(e, w)}
-                      title={saved ? 'Jau išsaugota' : 'Išsaugoti į mano sąrašą'}
-                      className={`shrink-0 text-lg transition-transform hover:scale-125 ${saved ? 'opacity-40 cursor-default' : ''}`}
-                      disabled={saved}
+                ))}
+                {favorites.map((w) => {
+                  const id = w.id || w.wishId
+                  return (
+                    <div
+                      key={id}
+                      className="bg-white border rounded-xl px-5 py-4 flex items-center gap-3 hover:border-indigo-400 hover:bg-indigo-50 transition-colors cursor-pointer"
+                      onClick={() => handleSelectWish(w)}
                     >
-                      {saved ? '❤️' : '🤍'}
-                    </button>
-                  )}
-                </div>
-              )
-            })}
-            {(showFavorites ? favorites : wishes).length === 0 && (
-              <p className="text-slate-400 text-sm">Nieko nėra.</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium">{w.text}</p>
+                        <p className="text-sm text-slate-400 mt-1">{w.toneLabel}</p>
+                      </div>
+                    </div>
+                  )
+                })}
+                {favorites.length === 0 && uniqueFavorites.length === 0 && (
+                  <p className="text-slate-400 text-sm">Nieko nėra.</p>
+                )}
+              </>
+            ) : (
+              <>
+                {wishes.map((w) => {
+                  const id = w.id || w.wishId
+                  const saved = savedWishes.has(id)
+                  return (
+                    <div
+                      key={id}
+                      className="bg-white border rounded-xl px-5 py-4 flex items-center gap-3 hover:border-indigo-400 hover:bg-indigo-50 transition-colors cursor-pointer"
+                      onClick={() => handleSelectWish(w)}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium">{w.text}</p>
+                        <p className="text-sm text-slate-400 mt-1">{w.toneLabel}</p>
+                      </div>
+                      <button
+                        onClick={(e) => handleSave(e, w)}
+                        title={saved ? 'Jau išsaugota' : 'Išsaugoti į mano sąrašą'}
+                        className={`shrink-0 text-lg transition-transform hover:scale-125 ${saved ? 'opacity-40 cursor-default' : ''}`}
+                        disabled={saved}
+                      >
+                        {saved ? '❤️' : '🤍'}
+                      </button>
+                    </div>
+                  )
+                })}
+                {wishes.length === 0 && (
+                  <p className="text-slate-400 text-sm">Nieko nėra.</p>
+                )}
+                {wishPage < maxPage && (
+                  <button
+                    onClick={() => setWishPage((p) => p + 1)}
+                    className="mt-1 text-sm text-indigo-500 hover:text-indigo-700 self-center"
+                  >
+                    Rodyti kitas 3 ({maxPage - wishPage} kart. liko)
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -202,7 +278,14 @@ export default function SendPage() {
         <div className="max-w-lg">
           <div className="flex items-center gap-3 mb-4">
             <button onClick={() => setStep(2)} className="text-slate-400 hover:text-slate-600">← Atgal</button>
-            <h2 className="text-xl font-bold">Siuntimo režimas</h2>
+            <div>
+              <h2 className="text-xl font-bold">Siuntimo režimas</h2>
+              {getLimitLabel() && (
+                <p className={`text-xs mt-0.5 ${limitInfo?.limited && limitInfo?.remaining === 0 ? 'text-red-500' : 'text-slate-400'}`}>
+                  {getLimitLabel()}
+                </p>
+              )}
+            </div>
           </div>
           <div className="bg-white border rounded-xl p-4 mb-6">
             <p className="font-medium">{selectedWish.text}</p>

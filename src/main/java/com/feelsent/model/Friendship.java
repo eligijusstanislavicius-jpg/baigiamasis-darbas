@@ -33,8 +33,12 @@ public class Friendship {
     private User receiver; // kas gauna draugystės užklausą
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private RelationshipType relationshipType; // ryšio tipas: MAMA, PARTNERIS, DRAUGAS...
+    @Column(name = "sender_relationship_type", nullable = false)
+    private RelationshipType senderRelationshipType; // kaip siuntėjas mato gavėją
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "receiver_relationship_type")
+    private RelationshipType receiverRelationshipType; // kaip gavėjas mato siuntėją (nustatoma priimant)
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

@@ -43,4 +43,11 @@ public class MessageLimitController {
     public ResponseEntity<List<MessageLimitResponse>> getMyLimits(Authentication authentication) {
         return ResponseEntity.ok(messageLimitService.getMyLimits(authentication.getName()));
     }
+
+    // GET /api/message-limits/info/{receiverId} – kiek žinučių liko siųsti šiam gavėjui per 24 val.
+    @GetMapping("/info/{receiverId}")
+    public ResponseEntity<java.util.Map<String, Object>> getLimitInfo(@PathVariable Long receiverId,
+                                                                       Authentication authentication) {
+        return ResponseEntity.ok(messageLimitService.getLimitInfo(authentication.getName(), receiverId));
+    }
 }

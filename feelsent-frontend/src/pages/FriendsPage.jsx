@@ -5,9 +5,12 @@ import api from '../api/axios'
 const REL_TYPES = [
   { value: 'FRIEND', label: 'Draugas' },
   { value: 'PARTNER', label: 'Partneris' },
+  { value: 'HUSBAND', label: 'Vyras' },
+  { value: 'WIFE', label: 'Žmona' },
   { value: 'MOTHER', label: 'Mama' },
   { value: 'FATHER', label: 'Tėtis' },
-  { value: 'CHILD', label: 'Vaikas' },
+  { value: 'SON', label: 'Sūnus' },
+  { value: 'DAUGHTER', label: 'Duktė' },
   { value: 'BROTHER', label: 'Brolis' },
   { value: 'SISTER', label: 'Sesuo' },
   { value: 'GRANDFATHER', label: 'Senelis' },
@@ -23,11 +26,15 @@ export default function FriendsPage() {
   const [searchErr, setSearchErr] = useState('')
   const [sendErr, setSendErr] = useState('')
   const [loading, setLoading] = useState(false)
+  const [acceptTypes, setAcceptTypes] = useState({})
 
   const load = async () => {
     const [fRes, pRes] = await Promise.all([getAll(), getPending()])
     setFriends(fRes.data)
     setPending(pRes.data)
+    const defaults = {}
+    pRes.data.forEach((f) => { defaults[f.id] = 'FRIEND' })
+    setAcceptTypes((prev) => ({ ...defaults, ...prev }))
   }
 
   useEffect(() => { load() }, [])
@@ -60,8 +67,13 @@ export default function FriendsPage() {
   }
 
   const handleAccept = async (id) => {
-    await accept(id)
-    load()
+    const rel = acceptTypes[id] || 'FRIEND'
+    try {
+      await accept(id, rel)
+      load()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Nepavyko priimti')
+    }
   }
 
   const handleDecline = async (id) => {
@@ -71,15 +83,32 @@ export default function FriendsPage() {
 
   const handleRemove = async (id) => {
     if (!confirm('Tikrai pašalinti draugą?')) return
-    await remove(id)
-    load()
+    try {
+      await remove(id)
+      load()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Nepavyko pašalinti draugo')
+    }
   }
 
+  const getMe = () => JSON.parse(localStorage.getItem('user'))
+
   const getFriendName = (f) => {
-    const me = JSON.parse(localStorage.getItem('user'))
-    if (f.senderUsername === me?.username)
-      return `${f.receiverFirstName} (${f.receiverUsername})`
-    return `${f.senderFirstName} (${f.senderUsername})`
+    const me = getMe()
+    if (f.senderId === me?.id) return f.receiverFirstName
+    return f.senderFirstName
+  }
+
+  const getMyRelLabel = (f) => {
+    const me = getMe()
+    if (f.senderId === me?.id) return f.senderRelationshipTypeLabel
+    return f.receiverRelationshipTypeLabel
+  }
+
+  const getFriendMood = (f) => {
+    const me = getMe()
+    if (f.senderId === me?.id) return f.receiverMoodStatusLabel || '😶 Nenustatyta'
+    return f.senderMoodStatusLabel || '😶 Nenustatyta'
   }
 
   return (
@@ -106,9 +135,10 @@ export default function FriendsPage() {
         {searchErr && <p className="text-red-500 text-sm mb-2">{searchErr}</p>}
         {searchResult && (
           <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 mb-3">
-            <p className="font-medium text-sm">{searchResult.firstName} {searchResult.lastName} (@{searchResult.username})</p>
+            <p className="font-medium text-sm">{searchResult.firstName} {searchResult.lastName}</p>
           </div>
         )}
+        <label className="block text-xs text-slate-500 mb-1">Kas šis žmogus man yra?</label>
         <select
           className="w-full border rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-400"
           value={relType}
@@ -134,14 +164,31 @@ export default function FriendsPage() {
           <h3 className="font-semibold mb-3 text-orange-600">⏳ Laukia patvirtinimo ({pending.length})</h3>
           <div className="flex flex-col gap-2">
             {pending.map((f) => (
-              <div key={f.id} className="bg-white border border-orange-200 rounded-xl px-5 py-3 flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-sm">{f.senderFirstName} ({f.senderUsername})</p>
-                  <p className="text-xs text-slate-400">{f.relationshipTypeLabel}</p>
+              <div key={f.id} className="bg-white border border-orange-200 rounded-xl px-5 py-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <p className="font-medium text-sm">{f.senderFirstName}</p>
+                    <p className="text-xs text-slate-400">nori prisijungti kaip: {f.senderRelationshipTypeLabel}</p>
+                  </div>
+                  <button onClick={() => handleDecline(f.id)} className="text-red-400 hover:text-red-600 text-sm">❌</button>
                 </div>
+                <label className="block text-xs text-slate-500 mb-1">Kas man yra šis žmogus?</label>
                 <div className="flex gap-2">
-                  <button onClick={() => handleAccept(f.id)} className="text-green-600 hover:text-green-700 text-sm font-medium">✅ Priimti</button>
-                  <button onClick={() => handleDecline(f.id)} className="text-red-500 hover:text-red-600 text-sm">❌</button>
+                  <select
+                    className="flex-1 border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    value={acceptTypes[f.id] || 'FRIEND'}
+                    onChange={(e) => setAcceptTypes((prev) => ({ ...prev, [f.id]: e.target.value }))}
+                  >
+                    {REL_TYPES.map((r) => (
+                      <option key={r.value} value={r.value}>{r.label}</option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => handleAccept(f.id)}
+                    className="bg-green-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-green-700"
+                  >
+                    ✅ Priimti
+                  </button>
                 </div>
               </div>
             ))}
@@ -158,7 +205,7 @@ export default function FriendsPage() {
             <div>
               <p className="font-medium text-sm">{getFriendName(f)}</p>
               <p className="text-xs text-slate-400">
-                {f.relationshipTypeLabel} • Nuotaika: {f.senderUsername === JSON.parse(localStorage.getItem('user'))?.username ? (f.receiverMoodStatusLabel || '😶 Nenustatyta') : (f.senderMoodStatusLabel || '😶 Nenustatyta')}
+                {getMyRelLabel(f)} • Nuotaika: {getFriendMood(f)}
               </p>
             </div>
             <button

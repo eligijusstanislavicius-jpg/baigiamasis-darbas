@@ -1,6 +1,7 @@
 package com.feelsent.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.feelsent.enums.MessageStatus;
 import com.feelsent.enums.NotificationType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -17,4 +18,5 @@ public class NotificationResponse {
     private boolean isRead;
     private Long relatedEntityId;
     private LocalDateTime createdAt;
+    private MessageStatus messageStatus; // null visada, išskyrus NEW_MESSAGE tipą
 }

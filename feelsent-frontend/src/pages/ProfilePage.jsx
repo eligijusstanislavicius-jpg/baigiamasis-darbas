@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
-import { getMe, updateMood, updateWant, clearMood, clearWant, getPoints } from '../api/users'
+import { useNavigate } from 'react-router-dom'
+import { getMe, updateMood, updateWant, clearMood, clearWant, getPoints, deleteAccount } from '../api/users'
+import { useAuth } from '../context/AuthContext'
 
 const MOODS = [
   { value: 'HAPPY', label: '😊 Laimingas' },
@@ -33,6 +35,8 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState(null)
   const [points, setPoints] = useState(null)
   const [saving, setSaving] = useState('')
+  const { logout } = useAuth()
+  const navigate = useNavigate()
 
   useEffect(() => {
     Promise.all([getMe(), getPoints()]).then(([pRes, ptRes]) => {
@@ -84,6 +88,13 @@ export default function ProfilePage() {
     }
   }
 
+  const handleDeleteAccount = async () => {
+    if (!window.confirm('Ar tikrai norite ištrinti paskyrą? Visi duomenys bus prarasti ir šio veiksmo negalima atšaukti.')) return
+    await deleteAccount()
+    logout()
+    navigate('/login')
+  }
+
   if (!profile) return <div className="p-8 text-slate-400">Kraunama...</div>
 
   return (
@@ -91,21 +102,32 @@ export default function ProfilePage() {
       <h2 className="text-xl font-bold mb-6">👤 Profilis</h2>
 
       <div className="bg-white border rounded-xl p-6 mb-6">
-        <p className="text-2xl font-bold">{profile.firstName} {profile.lastName}</p>
-        <p className="text-slate-400">@{profile.username}</p>
+        <div className="flex items-center gap-3">
+          <p className="text-2xl font-bold">{profile.firstName} {profile.lastName}</p>
+          {profile.role === 'ADMIN' && (
+            <span className="px-2 py-0.5 bg-violet-100 text-violet-700 text-xs font-semibold rounded-full">
+              Administratorius
+            </span>
+          )}
+        </div>
         {points && (
-          <div className="mt-4">
-            <div className="flex justify-between text-sm mb-1">
-              <span className="font-medium">{points.points} taškų  •  {points.rank}</span>
-              <span className="text-slate-400">+{points.pointsToNextLevel} iki kito lygio</span>
+          <>
+            <span className="inline-block mt-2 px-3 py-1 bg-indigo-100 text-indigo-700 text-sm font-semibold rounded-full">
+              Lygis: {points.rank}
+            </span>
+            <div className="mt-3">
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-slate-600">{points.points} taškai</span>
+                <span className="text-slate-400">+{points.pointsToNextLevel} iki kito lygio</span>
+              </div>
+              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-indigo-500 rounded-full transition-all"
+                  style={{ width: `${points.percent}%` }}
+                />
+              </div>
             </div>
-            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-indigo-500 rounded-full transition-all"
-                style={{ width: `${points.percent}%` }}
-              />
-            </div>
-          </div>
+          </>
         )}
       </div>
 
@@ -138,7 +160,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="bg-white border rounded-xl p-6">
+      <div className="bg-white border rounded-xl p-6 mb-6">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold">Ko norėčiau gauti {saving === 'want' ? '(saugoma...)' : ''}</h3>
           {profile.moodWant && (
@@ -166,6 +188,16 @@ export default function ProfilePage() {
           ))}
         </div>
       </div>
+      {profile.role !== 'ADMIN' && <div className="bg-white border border-red-200 rounded-xl p-6">
+        <h3 className="font-semibold text-red-600 mb-3">Pavojinga zona</h3>
+        <p className="text-sm text-slate-500 mb-4">Ištrynus paskyrą visi duomenys bus prarasti ir šio veiksmo negalima atšaukti.</p>
+        <button
+          onClick={handleDeleteAccount}
+          className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
+        >
+          Ištrinti paskyrą
+        </button>
+      </div>}
     </div>
   )
 }

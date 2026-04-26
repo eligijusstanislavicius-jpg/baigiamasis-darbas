@@ -29,8 +29,12 @@ public class Message {
     private User receiver; // kas gavo žinutę
 
     @ManyToOne
-    @JoinColumn(name = "wish_id", nullable = false)
-    private Wish wish; // palinkėjimas iš DB (visada iš DB – laisvo teksto nėra)
+    @JoinColumn(name = "wish_id")
+    private Wish wish; // bendras palinkėjimas iš wishes lentelės (nullable jei unikalus)
+
+    @ManyToOne
+    @JoinColumn(name = "unique_wish_id")
+    private UniqueWish uniqueWish; // asmeninis palinkėjimas (nullable jei bendras)
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

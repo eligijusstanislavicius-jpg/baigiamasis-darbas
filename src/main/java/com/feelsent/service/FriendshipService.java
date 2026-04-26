@@ -56,30 +56,34 @@ public class FriendshipService {
         Friendship friendship = new Friendship();
         friendship.setSender(sender);
         friendship.setReceiver(receiver);
-        friendship.setRelationshipType(relationshipType);
-        friendship.setStatus(FriendshipStatus.PENDING); // pradinė būsena – laukiama
+        friendship.setSenderRelationshipType(relationshipType);
+        friendship.setStatus(FriendshipStatus.PENDING);
         friendship.setCreatedAt(LocalDateTime.now());
 
         friendshipRepository.save(friendship);
 
         // Pranešame gavėjui apie naują draugystės užklausą (el. paštas – gavėjas gali dar nebūti aktyvus)
-        emailService.sendFriendRequestEmail(receiver.getEmail(), receiver.getUsername(), sender.getUsername());
+        emailService.sendFriendRequestEmail(receiver.getEmail(), receiver.getFirstName(), sender.getFirstName());
 
         return toResponse(friendship);
     }
 
-    // Priima draugystės užklausą – keičia statusą į ACCEPTED
+    // Priima draugystės užklausą – keičia statusą į ACCEPTED ir nustato gavėjo ryšio tipą
     @Transactional
-    public FriendshipResponse acceptRequest(String receiverEmail, Long friendshipId) {
+    public FriendshipResponse acceptRequest(String receiverEmail, Long friendshipId, RelationshipType receiverRelationshipType) {
+        if (receiverRelationshipType == null) {
+            throw new IllegalArgumentException("Pasirinkite kas jums yra šis žmogus");
+        }
         Friendship friendship = findAndValidate(friendshipId, receiverEmail);
         friendship.setStatus(FriendshipStatus.ACCEPTED);
+        friendship.setReceiverRelationshipType(receiverRelationshipType);
         friendshipRepository.save(friendship);
 
         // Pranešame siuntėjui kad jo užklausa priimta (in-app – abu jau registruoti)
         notificationService.create(
                 friendship.getSender(),
                 NotificationType.FRIEND_REQUEST_ACCEPTED,
-                friendship.getReceiver().getUsername() + " priėmė jūsų draugystės užklausą!",
+                friendship.getReceiver().getFirstName() + " priėmė jūsų draugystės užklausą!",
                 friendship.getId()
         );
 
@@ -141,15 +145,21 @@ public class FriendshipService {
 
         friendship.setStatus(FriendshipStatus.REMOVED);
         friendshipRepository.save(friendship);
+
+        User remover = isSender ? friendship.getSender() : friendship.getReceiver();
+        User removed = isSender ? friendship.getReceiver() : friendship.getSender();
+        notificationService.create(
+                removed,
+                NotificationType.FRIEND_REMOVED,
+                remover.getFirstName() + " pašalino tave iš draugų sąrašo",
+                friendship.getId()
+        );
     }
 
     // Pagalbinis metodas MessageService naudojimui – tikrina ar du vartotojai draugai
     public boolean areFriends(User user1, User user2) {
-        return friendshipRepository.findBySenderAndReceiver(user1, user2)
-                .map(f -> f.getStatus() == FriendshipStatus.ACCEPTED)
-                .orElseGet(() -> friendshipRepository.findBySenderAndReceiver(user2, user1)
-                        .map(f -> f.getStatus() == FriendshipStatus.ACCEPTED)
-                        .orElse(false));
+        return friendshipRepository.findFirstBySenderAndReceiverAndStatus(user1, user2, FriendshipStatus.ACCEPTED).isPresent()
+                || friendshipRepository.findFirstBySenderAndReceiverAndStatus(user2, user1, FriendshipStatus.ACCEPTED).isPresent();
     }
 
     // Randa draugystę ir patikrina ar šis vartotojas yra gavėjas (tik gavėjas gali priimti/atmesti)
@@ -172,20 +182,22 @@ public class FriendshipService {
     private FriendshipResponse toResponse(Friendship f) {
         MoodStatus senderMood = f.getSender().getMoodStatus();
         MoodStatus receiverMood = f.getReceiver().getMoodStatus();
+        RelationshipType senderRel = f.getSenderRelationshipType();
+        RelationshipType receiverRel = f.getReceiverRelationshipType();
         return new FriendshipResponse(
                 f.getId(),
                 f.getSender().getId(),
-                f.getSender().getUsername(),
                 f.getSender().getFirstName(),
                 senderMood,
                 senderMood != null ? senderMood.getLabel() : null,
                 f.getReceiver().getId(),
-                f.getReceiver().getUsername(),
                 f.getReceiver().getFirstName(),
                 receiverMood,
                 receiverMood != null ? receiverMood.getLabel() : null,
-                f.getRelationshipType(),
-                f.getRelationshipType().getLabel(),
+                senderRel,
+                senderRel != null ? senderRel.getLabel() : null,
+                receiverRel,
+                receiverRel != null ? receiverRel.getLabel() : null,
                 f.getStatus(),
                 f.getCreatedAt()
         );

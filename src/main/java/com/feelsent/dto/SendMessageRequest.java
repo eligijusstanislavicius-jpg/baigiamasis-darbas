@@ -7,6 +7,7 @@ import lombok.Data;
 @Data
 public class SendMessageRequest {
     private Long receiverId;
-    private Long wishId;       // palinkėjimo ID iš DB (gali būti iš pasiūlymų arba iš mėgstamų)
+    private Long wishId;         // bendras palinkėjimas (arba šis, arba uniqueWishId)
+    private Long uniqueWishId;   // asmeninis palinkėjimas
     private SendMode sendMode;
 }

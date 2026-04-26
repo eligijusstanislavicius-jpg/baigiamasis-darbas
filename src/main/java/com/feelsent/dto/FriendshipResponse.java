@@ -13,17 +13,17 @@ import java.time.LocalDateTime;
 public class FriendshipResponse {
     private Long id;
     private Long senderId;
-    private String senderUsername;
     private String senderFirstName;
     private MoodStatus senderMoodStatus;
     private String senderMoodStatusLabel;
     private Long receiverId;
-    private String receiverUsername;
     private String receiverFirstName;
     private MoodStatus receiverMoodStatus;
     private String receiverMoodStatusLabel;
-    private RelationshipType relationshipType;
-    private String relationshipTypeLabel;
+    private RelationshipType senderRelationshipType;
+    private String senderRelationshipTypeLabel;
+    private RelationshipType receiverRelationshipType;
+    private String receiverRelationshipTypeLabel;
     private FriendshipStatus status;
     private LocalDateTime createdAt;
 }

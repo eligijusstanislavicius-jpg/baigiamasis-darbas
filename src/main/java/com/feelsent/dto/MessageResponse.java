@@ -14,10 +14,8 @@ import java.time.LocalDateTime;
 public class MessageResponse {
     private Long id;
     private Long senderId;
-    private String senderUsername;
     private String senderFirstName;
     private Long receiverId;
-    private String receiverUsername;
     private String receiverFirstName;
 
     private Long wishId;

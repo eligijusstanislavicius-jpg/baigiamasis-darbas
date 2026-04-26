@@ -8,8 +8,11 @@ import lombok.RequiredArgsConstructor;
 public enum RelationshipType {
     MOTHER("Mama"),
     FATHER("Tėtis"),
-    CHILD("Vaikas"),
+    SON("Sūnus"),
+    DAUGHTER("Duktė"),
     PARTNER("Partneris"),
+    HUSBAND("Vyras"),
+    WIFE("Žmona"),
     FRIEND("Draugas"),
     BROTHER("Brolis"),
     SISTER("Sesuo"),

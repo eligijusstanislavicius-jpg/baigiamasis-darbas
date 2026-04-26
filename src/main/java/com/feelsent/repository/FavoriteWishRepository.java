@@ -17,4 +17,6 @@ public interface FavoriteWishRepository extends JpaRepository<FavoriteWish, Long
     Optional<FavoriteWish> findByIdAndUser(Long id, User user); // ieško pagal ID ir vartotoją (saugumui)
 
     boolean existsByUserAndWish(User user, Wish wish); // tikrina ar šis palinkėjimas jau išsaugotas
+
+    void deleteAllByUser(User user);
 }

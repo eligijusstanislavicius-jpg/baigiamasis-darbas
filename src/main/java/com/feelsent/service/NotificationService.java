@@ -1,10 +1,12 @@
 package com.feelsent.service;
 
 import com.feelsent.dto.NotificationResponse;
+import com.feelsent.enums.MessageStatus;
 import com.feelsent.enums.NotificationType;
 import com.feelsent.exception.UserNotFoundException;
 import com.feelsent.model.Notification;
 import com.feelsent.model.User;
+import com.feelsent.repository.MessageRepository;
 import com.feelsent.repository.NotificationRepository;
 import com.feelsent.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,7 @@ import java.util.List;
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
+    private final MessageRepository messageRepository;
     private final UserRepository userRepository;
 
     // Sukuria in-app pranešimą vartotojui
@@ -74,13 +77,20 @@ public class NotificationService {
     }
 
     private NotificationResponse toResponse(Notification n) {
+        MessageStatus messageStatus = null;
+        if (n.getType() == NotificationType.NEW_MESSAGE && n.getRelatedEntityId() != null) {
+            messageStatus = messageRepository.findById(n.getRelatedEntityId())
+                    .map(m -> m.getStatus())
+                    .orElse(null);
+        }
         return new NotificationResponse(
                 n.getId(),
                 n.getType(),
                 n.getText(),
                 n.isRead(),
                 n.getRelatedEntityId(),
-                n.getCreatedAt()
+                n.getCreatedAt(),
+                messageStatus
         );
     }
 }

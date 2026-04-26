@@ -71,7 +71,7 @@ export default function InboxPage() {
         {messages.map((m) => (
           <div key={m.id} className="bg-white rounded-xl shadow-sm border p-6">
             <p className="text-sm text-slate-400 mb-1">
-              Nuo: <span className="font-medium text-slate-700">{m.senderFirstName} ({m.senderUsername})</span>
+              Nuo: <span className="font-medium text-slate-700">{m.senderFirstName}</span>
             </p>
             <p className="text-xs text-slate-300 mb-4">
               {new Date(m.sentAt).toLocaleString('lt-LT')}

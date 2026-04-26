@@ -1,5 +1,6 @@
 package com.feelsent.controller;
 
+import com.feelsent.dto.AcceptRequest;
 import com.feelsent.dto.FriendshipRequest;
 import com.feelsent.dto.FriendshipResponse;
 import com.feelsent.service.FriendshipService;
@@ -31,10 +32,12 @@ public class FriendshipController {
     }
 
     // PATCH /api/friendships/{id}/accept – priima draugystės užklausą
+    // Body: { "relationshipType": "FRIEND" } – gavėjas nurodo kas jam yra siuntėjas
     @PatchMapping("/{id}/accept")
     public ResponseEntity<FriendshipResponse> acceptRequest(@PathVariable Long id,
+                                                            @RequestBody AcceptRequest body,
                                                             Authentication authentication) {
-        return ResponseEntity.ok(friendshipService.acceptRequest(authentication.getName(), id));
+        return ResponseEntity.ok(friendshipService.acceptRequest(authentication.getName(), id, body.getRelationshipType()));
     }
 
     // PATCH /api/friendships/{id}/decline – atmeta draugystės užklausą

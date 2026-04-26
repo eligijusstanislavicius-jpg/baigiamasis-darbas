@@ -10,8 +10,14 @@ import com.feelsent.enums.MoodWant;
 import com.feelsent.enums.Role;
 import com.feelsent.exception.UserNotFoundException;
 import com.feelsent.model.User;
+import com.feelsent.repository.FavoriteWishRepository;
+import com.feelsent.repository.FriendshipRepository;
+import com.feelsent.repository.MessageLimitRepository;
+import com.feelsent.repository.MessageRepository;
+import com.feelsent.repository.NotificationRepository;
 import com.feelsent.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,45 +25,65 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;   // BCrypt slaptažodžių šifravimui
-    private final JwtConfig jwtConfig;               // JWT token'ų generavimui
-    private final AuthenticationManager authenticationManager; // prisijungimo tikrinimui
-    private final EmailService emailService;         // el. laiškų siuntimui
+    private final PasswordEncoder passwordEncoder;
+    private final JwtConfig jwtConfig;
+    private final AuthenticationManager authenticationManager;
+    private final EmailService emailService;
+    private final NotificationRepository notificationRepository;
+    private final FavoriteWishRepository favoriteWishRepository;
+    private final MessageLimitRepository messageLimitRepository;
+    private final MessageRepository messageRepository;
+    private final FriendshipRepository friendshipRepository;
+    private final com.feelsent.repository.UserUniqueWishRepository userUniqueWishRepository;
 
-    // Registruoja naują vartotoją ir grąžina JWT token'ą
+    @Value("${app.base-url:http://localhost:8080}")
+    private String baseUrl;
+
+    // Registruoja naują vartotoją ir išsiunčia patvirtinimo laišką
     @Transactional
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("El. paštas jau užregistruotas");
         }
-        if (userRepository.existsByUsername(request.getUsername())) {
-            throw new IllegalArgumentException("Vartotojo vardas jau užimtas");
-        }
 
         User user = new User();
-        user.setUsername(request.getUsername());
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
         user.setEmail(request.getEmail());
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword())); // šifruojame slaptažodį
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setRole(Role.USER);
         user.setPoints(0);
         user.setCreatedAt(LocalDateTime.now());
+        user.setEmailVerified(true);
+        user.setLastLoginAt(LocalDateTime.now());
 
         userRepository.save(user);
 
-        // Siunčiame pasveikinimo laišką fone (neblokuoja registracijos)
-        emailService.sendWelcomeEmail(user.getEmail(), user.getUsername());
-
-        // Generuojame token'ą iš karto po registracijos – vartotojui nereikia atskirai prisijungti
         String token = jwtConfig.generateToken(user.getEmail());
-        return new AuthResponse(token, user.getUsername());
+        return new AuthResponse(token, user.getId(), user.getFirstName(), user.getLastName(), user.getRole().name());
+    }
+
+    // Patvirtina el. paštą pagal token'ą ir grąžina JWT
+    @Transactional
+    public AuthResponse verifyEmail(String token) {
+        User user = userRepository.findByVerificationToken(token)
+                .orElseThrow(() -> new IllegalArgumentException("Neteisingas arba pasenęs patvirtinimo kodas"));
+
+        user.setEmailVerified(true);
+        user.setVerificationToken(null);
+        userRepository.save(user);
+
+        emailService.sendWelcomeEmail(user.getEmail(), user.getFirstName());
+
+        return new AuthResponse(jwtConfig.generateToken(user.getEmail()), user.getId(), user.getFirstName(), user.getLastName(), user.getRole().name());
     }
 
     // Prisijungimas – tikrina slaptažodį ir grąžina JWT token'ą
@@ -72,11 +98,15 @@ public class UserService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new UserNotFoundException("Vartotojas nerastas"));
 
+        if (!user.isEmailVerified()) {
+            throw new IllegalStateException("El. paštas nepatvirtintas. Patikrinkite savo paštą.");
+        }
+
         user.setLastLoginAt(LocalDateTime.now());
         userRepository.save(user);
 
         String token = jwtConfig.generateToken(user.getEmail());
-        return new AuthResponse(token, user.getUsername());
+        return new AuthResponse(token, user.getId(), user.getFirstName(), user.getLastName(), user.getRole().name());
     }
 
     // Grąžina vartotojo profilį pagal el. paštą (iš JWT token'o)
@@ -86,14 +116,15 @@ public class UserService {
 
         return new UserProfileResponse(
                 user.getId(),
-                user.getUsername(),
                 user.getFirstName(),
                 user.getLastName(),
                 user.getMoodStatus(),
                 user.getMoodStatus() != null ? user.getMoodStatus().getLabel() : null,
                 user.getMoodWant(),
                 user.getMoodWant() != null ? user.getMoodWant().getLabel() : null,
-                user.getPoints()
+                user.getPoints(),
+                user.getRole(),
+                user.getLastLoginAt()
         );
     }
 
@@ -126,12 +157,12 @@ public class UserService {
         int percent = remainder == 0 ? (points == 0 ? 0 : 100) : remainder;
 
         String rank;
-        if (points >= 800)      rank = "Širdies žmogus";
-        else if (points >= 500) rank = "Mylintysis";
-        else if (points >= 300) rank = "Šiltas žmogus";
-        else if (points >= 150) rank = "Rūpestingasis";
-        else if (points >= 50)  rank = "Draugas";
-        else                    rank = "Naujokas";
+        if (points >= 3000)      rank = "Širdies žmogus";
+        else if (points >= 1500) rank = "Mylintysis";
+        else if (points >= 800)  rank = "Šiltas žmogus";
+        else if (points >= 400)  rank = "Rūpestingasis";
+        else if (points >= 150)  rank = "Draugas";
+        else                     rank = "Naujokas";
 
         return java.util.Map.of(
                 "points", points,
@@ -145,5 +176,20 @@ public class UserService {
     public User getByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("Vartotojas nerastas"));
+    }
+
+    @Transactional
+    public void deleteAccount(String email) {
+        User user = getByEmail(email);
+        if (user.getRole() == com.feelsent.enums.Role.ADMIN) {
+            throw new IllegalArgumentException("Administratoriaus paskyros ištrinti negalima");
+        }
+        notificationRepository.deleteAllByUser(user);
+        favoriteWishRepository.deleteAllByUser(user);
+        messageLimitRepository.deleteAllByUser(user);
+        messageRepository.deleteAllByUser(user);
+        friendshipRepository.deleteAllByUser(user);
+        userUniqueWishRepository.deleteAllByUser(user);
+        userRepository.delete(user);
     }
 }

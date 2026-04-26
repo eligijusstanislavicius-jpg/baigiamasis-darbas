@@ -8,6 +8,9 @@ import lombok.Data;
 @AllArgsConstructor // Lombok: sukuria konstruktorių su visais laukais
 public class AuthResponse {
 
-    private String token;    // JWT token'as (klientas saugo ir siunčia su kiekviena užklausa)
-    private String username; // vartotojo vardas (rodymui)
+    private String token;
+    private Long id;
+    private String firstName;
+    private String lastName;
+    private String role;
 }

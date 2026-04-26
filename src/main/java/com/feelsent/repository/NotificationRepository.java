@@ -24,4 +24,8 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     @Modifying
     @Query("DELETE FROM Notification n WHERE n.createdAt < :threshold")
     void deleteAllOlderThan(@Param("threshold") LocalDateTime threshold);
+
+    @Modifying
+    @Query("DELETE FROM Notification n WHERE n.user = :user")
+    void deleteAllByUser(@Param("user") User user);
 }

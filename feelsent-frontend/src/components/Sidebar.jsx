@@ -9,6 +9,7 @@ const links = [
   { to: '/profile', label: '👤 Profilis' },
   { to: '/notifications', label: '🔔 Pranešimai' },
   { to: '/limits', label: '⚙️ Limitai' },
+  { to: '/contact', label: '📩 Susisiekti' },
 ]
 
 export default function Sidebar() {
@@ -24,7 +25,16 @@ export default function Sidebar() {
     <div className="w-56 min-h-screen bg-white border-r flex flex-col">
       <div className="px-6 py-5 border-b">
         <p className="font-bold text-indigo-600 text-lg">FeelSent</p>
-        <p className="text-xs text-slate-400 mt-1">{user?.username}</p>
+        {user && (
+          <div className="mt-1">
+            <p className="text-sm font-medium text-slate-700">{user.firstName} {user.lastName}</p>
+            {isAdmin() && (
+              <span className="inline-block mt-0.5 px-2 py-0.5 bg-violet-100 text-violet-700 text-xs font-semibold rounded-full">
+                Administratorius
+              </span>
+            )}
+          </div>
+        )}
       </div>
       <nav className="flex-1 py-4">
         {links.map((l) => (
@@ -68,6 +78,18 @@ export default function Sidebar() {
               }
             >
               📋 Palinkėjimai
+            </NavLink>
+            <NavLink
+              to="/admin/users"
+              className={({ isActive }) =>
+                `block px-6 py-2.5 text-sm transition-colors ${
+                  isActive
+                    ? 'bg-red-50 text-red-700 font-medium border-r-2 border-red-600'
+                    : 'text-slate-600 hover:bg-slate-50'
+                }`
+              }
+            >
+              👥 Visi vartotojai
             </NavLink>
           </>
         )}

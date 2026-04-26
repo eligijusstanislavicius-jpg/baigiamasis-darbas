@@ -72,4 +72,11 @@ public class UserController {
         }
         return ResponseEntity.ok(userService.getProfile(email));
     }
+
+    // DELETE /api/users/me – vartotojas ištrina savo paskyrą ir visus susijusius duomenis
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> deleteAccount(Authentication authentication) {
+        userService.deleteAccount(authentication.getName());
+        return ResponseEntity.noContent().build();
+    }
 }

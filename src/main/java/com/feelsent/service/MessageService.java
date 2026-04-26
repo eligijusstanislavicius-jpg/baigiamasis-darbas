@@ -12,6 +12,7 @@ import com.feelsent.exception.NotFriendsException;
 import com.feelsent.exception.UserNotFoundException;
 import com.feelsent.model.*;
 import com.feelsent.repository.*;
+import com.feelsent.repository.UniqueWishRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +29,7 @@ public class MessageService {
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
     private final WishRepository wishRepository;
+    private final UniqueWishRepository uniqueWishRepository;
     private final MessageLimitRepository messageLimitRepository;
     private final FriendshipService friendshipService;
     private final PointService pointService;
@@ -49,17 +51,23 @@ public class MessageService {
         // Tikrinama žinutės limito taisyklė (gavėjas galėjo apriboti siuntėją)
         checkDailyLimit(sender, receiver);
 
-        if (request.getWishId() == null) {
-            throw new IllegalArgumentException("Reikia nurodyti palinkėjimą (wishId)");
+        if (request.getWishId() == null && request.getUniqueWishId() == null) {
+            throw new IllegalArgumentException("Reikia nurodyti palinkėjimą (wishId arba uniqueWishId)");
         }
-
-        Wish wish = wishRepository.findById(request.getWishId())
-                .orElseThrow(() -> new IllegalArgumentException("Palinkėjimas nerastas"));
 
         Message message = new Message();
         message.setSender(sender);
         message.setReceiver(receiver);
-        message.setWish(wish);
+
+        if (request.getUniqueWishId() != null) {
+            UniqueWish uw = uniqueWishRepository.findById(request.getUniqueWishId())
+                    .orElseThrow(() -> new IllegalArgumentException("Unikalus palinkėjimas nerastas"));
+            message.setUniqueWish(uw);
+        } else {
+            Wish wish = wishRepository.findById(request.getWishId())
+                    .orElseThrow(() -> new IllegalArgumentException("Palinkėjimas nerastas"));
+            message.setWish(wish);
+        }
         message.setSendMode(request.getSendMode());
         message.setStatus(MessageStatus.SENT);
         message.setSentAt(LocalDateTime.now());
@@ -103,17 +111,26 @@ public class MessageService {
             throw new IllegalArgumentException("Žinutė turi būti atidaryta prieš spėjant");
         }
 
-        boolean correct = message.getWish().getTone() == guessedTone;
+        WishTone correctTone = message.getWish() != null ? message.getWish().getTone() : null;
+        boolean correct = correctTone != null && correctTone == guessedTone;
         message.setGuessResult(correct);
         message.setStatus(MessageStatus.GUESSED);
 
-        // Jei teisingai atspėjo – siuntėjas gauna 5 taškus
         if (correct) {
-            pointService.awardGuessCorrect(message.getSender(), message);
+            // Siuntėjas gauna 5 taškus
+            pointService.awardGuessCorrect(message.getSender());
             notificationService.create(
                     message.getSender(),
                     NotificationType.GUESS_CORRECT,
-                    message.getReceiver().getFirstName() + " teisingai atspėjo jūsų palinkėjimą!",
+                    message.getReceiver().getFirstName() + " teisingai atspėjo jūsų palinkėjimą! +5 taškai",
+                    message.getId()
+            );
+            // Gavėjas gauna 3 taškus už teisingą atspėjimą
+            pointService.awardGuessCorrectForReceiver(message.getReceiver());
+            notificationService.create(
+                    message.getReceiver(),
+                    NotificationType.GUESS_CORRECT,
+                    "Teisingai atspėjote! +3 taškai",
                     message.getId()
             );
         }
@@ -136,13 +153,22 @@ public class MessageService {
         message.setStatus(MessageStatus.REACTED);
 
         // Siuntėjas gauna 10 taškų už gautą reakciją
-        pointService.awardReactionReceived(message.getSender(), message);
+        pointService.awardReactionReceived(message.getSender());
 
-        // Pranešame siuntėjui kad gavėjas sureagavo (in-app)
+        // Pranešame siuntėjui kad gavėjas sureagavo + kiek taškų gavo
         notificationService.create(
                 message.getSender(),
                 NotificationType.MESSAGE_REACTED,
                 message.getReceiver().getFirstName() + " sureagavo į jūsų palinkėjimą: "
+                        + reaction.getEmoji() + " " + reaction.getLabel() + " · +10 taškų",
+                message.getId()
+        );
+
+        // Pranešame gavėjui kad jo reakcija užfiksuota
+        notificationService.create(
+                message.getReceiver(),
+                NotificationType.MESSAGE_REACTED,
+                "Jūs sureagavote į " + message.getSender().getFirstName() + " palinkėjimą: "
                         + reaction.getEmoji() + " " + reaction.getLabel(),
                 message.getId()
         );
@@ -175,7 +201,7 @@ public class MessageService {
 
     // Tikrina ar siuntėjas neviršijo gavėjo nustatyto dienos limito
     private void checkDailyLimit(User sender, User receiver) {
-        messageLimitRepository.findByReceiverAndSender(receiver, sender).ifPresent(limit -> {
+        messageLimitRepository.findFirstByReceiverAndSender(receiver, sender).ifPresent(limit -> {
             LocalDateTime since = LocalDateTime.now().minusHours(24);
             long sent = messageRepository.countBySenderAndReceiverAndSentAtAfter(sender, receiver, since);
             if (sent >= limit.getDailyLimit()) {
@@ -203,32 +229,46 @@ public class MessageService {
     // Paverčia Message entity į DTO
     // GUESS režimas: kol status=SENT arba OPENED – tekstas neparodytas (tik paveikslėlis)
     private MessageResponse toResponse(Message m) {
+        boolean isUnique = m.getUniqueWish() != null;
         boolean isGuessMode = m.getSendMode() == SendMode.GUESS;
         boolean revealed = !isGuessMode
                 || m.getStatus() == MessageStatus.GUESSED
                 || m.getStatus() == MessageStatus.REACTED;
 
-        // GUESS režimas: tekstas ir tonas slepiami kol gavėjas neatspėja
-        String wishText = revealed ? m.getWish().getText() : null;
-        WishTone wishTone = revealed ? m.getWish().getTone() : null;
-        String wishToneLabel = revealed ? m.getWish().getTone().getLabel() : null;
+        String wishText;
+        WishTone wishTone;
+        String wishToneLabel;
+        Long wishId;
+        String imageUrl;
+
+        if (isUnique) {
+            wishText = m.getUniqueWish().getText();
+            wishTone = null;
+            wishToneLabel = "Asmeninis";
+            wishId = null;
+            imageUrl = null;
+        } else {
+            wishText = revealed ? m.getWish().getText() : null;
+            wishTone = revealed ? m.getWish().getTone() : null;
+            wishToneLabel = revealed ? m.getWish().getTone().getLabel() : null;
+            wishId = m.getWish().getId();
+            imageUrl = "/static/images/wishes/" + m.getWish().getId() + ".png";
+        }
 
         boolean suggestReply = m.getStatus() == MessageStatus.REACTED;
-
         Reaction reaction = m.getReaction();
+
         return new MessageResponse(
                 m.getId(),
                 m.getSender().getId(),
-                m.getSender().getUsername(),
                 m.getSender().getFirstName(),
                 m.getReceiver().getId(),
-                m.getReceiver().getUsername(),
                 m.getReceiver().getFirstName(),
-                m.getWish().getId(),
+                wishId,
                 wishText,
                 wishTone,
                 wishToneLabel,
-                "/static/images/wishes/" + m.getWish().getId() + ".png",
+                imageUrl,
                 m.getSendMode(),
                 m.getSendMode().getLabel(),
                 m.getStatus(),
