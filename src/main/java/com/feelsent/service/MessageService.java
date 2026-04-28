@@ -30,6 +30,7 @@ public class MessageService {
     private final UserRepository userRepository;
     private final WishRepository wishRepository;
     private final UniqueWishRepository uniqueWishRepository;
+    private final UserUniqueWishRepository userUniqueWishRepository;
     private final MessageLimitRepository messageLimitRepository;
     private final FriendshipService friendshipService;
     private final PointService pointService;
@@ -62,6 +63,11 @@ public class MessageService {
         if (request.getUniqueWishId() != null) {
             UniqueWish uw = uniqueWishRepository.findById(request.getUniqueWishId())
                     .orElseThrow(() -> new IllegalArgumentException("Unikalus palinkėjimas nerastas"));
+            UserUniqueWish assignment = userUniqueWishRepository.findByUserAndUniqueWish(sender, uw)
+                    .orElseThrow(() -> new IllegalArgumentException("Šis palinkėjimas jums nepriskirtas"));
+            if (assignment.getExpiresAt() != null && assignment.getExpiresAt().isBefore(LocalDateTime.now())) {
+                throw new IllegalArgumentException("Šio palinkėjimo galiojimo laikas pasibaigė");
+            }
             message.setUniqueWish(uw);
         } else {
             Wish wish = wishRepository.findById(request.getWishId())

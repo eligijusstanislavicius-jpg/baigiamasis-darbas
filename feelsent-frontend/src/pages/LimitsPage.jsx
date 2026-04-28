@@ -1,6 +1,21 @@
 import { useEffect, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Settings, Trash2 } from 'lucide-react'
 import { getAll, setLimit, removeLimit } from '../api/limits'
 import { getAll as getFriends } from '../api/friendships'
+
+const selectStyle = {
+  background: 'rgba(255,255,255,0.55)',
+  backdropFilter: 'blur(10px)',
+  border: '1px solid rgba(255,255,255,0.80)',
+  borderRadius: '12px',
+  padding: '10px 16px',
+  fontSize: '0.9rem',
+  color: 'var(--text-primary)',
+  outline: 'none',
+  width: '100%',
+  fontFamily: 'inherit',
+}
 
 export default function LimitsPage() {
   const [limits, setLimits] = useState([])
@@ -48,14 +63,38 @@ export default function LimitsPage() {
   }
 
   return (
-    <div className="p-8 max-w-2xl">
-      <h2 className="text-xl font-bold mb-2">⚙️ Limitai</h2>
-      <p className="text-sm text-slate-400 mb-6">Riboji kiek žinučių per dieną gali gauti iš konkretaus draugo.</p>
+    <div className="p-8 max-w-2xl" style={{ paddingLeft: '2.5rem' }}>
+      {/* Antraštė */}
+      <motion.div
+        initial={{ opacity: 0, y: -16 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center gap-3 mb-2"
+      >
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center"
+          style={{ background: 'linear-gradient(135deg, var(--accent-from), var(--accent-to))' }}
+        >
+          <Settings size={20} color="white" strokeWidth={2} />
+        </div>
+        <h1 className="text-2xl font-extrabold" style={{ color: 'var(--text-primary)' }}>Žinučių limitai</h1>
+      </motion.div>
+      <p className="text-sm mb-8 ml-[52px]" style={{ color: 'var(--text-muted)' }}>
+        Riboji kiek žinučių per dieną gali gauti iš konkretaus draugo.
+      </p>
 
-      <div className="bg-white border rounded-xl p-6 mb-6">
-        <h3 className="font-semibold mb-3">Nustatyti limitą</h3>
+      {/* Nustatymo forma */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="glass p-6 mb-6"
+      >
+        <h3 className="font-semibold text-sm mb-4" style={{ color: 'var(--text-primary)', paddingLeft: '5px' }}>
+          Nustatyti limitą
+        </h3>
         <select
-          className="w-full border rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          style={selectStyle}
+          className="mb-3"
           value={senderId}
           onChange={(e) => setSenderId(e.target.value)}
         >
@@ -64,45 +103,72 @@ export default function LimitsPage() {
             <option key={f.id} value={getFriendId(f)}>{getFriendName(f)}</option>
           ))}
         </select>
-        <div className="flex items-center gap-3 mb-3">
-          <label className="text-sm text-slate-600">Žinučių per dieną:</label>
+        <div className="flex items-center gap-3 mb-4" style={{ paddingLeft: '5px' }}>
+          <label className="text-sm" style={{ color: 'var(--text-primary)' }}>Žinučių per dieną:</label>
           <input
             type="number"
             min={1}
             max={50}
             value={dailyLimit}
             onChange={(e) => setDailyLimit(parseInt(e.target.value))}
-            className="w-20 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="glass-input"
+            style={{ width: '5rem' }}
           />
         </div>
-        {err && <p className="text-red-500 text-sm mb-2">{err}</p>}
-        <button
+        {err && <p className="text-sm mb-3" style={{ color: '#be185d' }}>{err}</p>}
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.97 }}
           onClick={handleSet}
           disabled={loading}
-          className="w-full bg-indigo-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
+          className="btn-gradient w-full py-2.5"
         >
-          Išsaugoti
-        </button>
-      </div>
+          {loading ? 'Saugoma...' : 'Išsaugoti'}
+        </motion.button>
+      </motion.div>
 
-      <h3 className="font-semibold mb-3">Nustatyti limitai ({limits.length})</h3>
-      {limits.length === 0 && <p className="text-slate-400 text-sm">Nėra nustatytų limitų.</p>}
-      <div className="flex flex-col gap-2">
-        {limits.map((l) => (
-          <div key={l.id} className="bg-white border rounded-xl px-5 py-3 flex items-center justify-between">
-            <div>
-              <p className="font-medium text-sm">{l.senderFirstName}</p>
-              <p className="text-xs text-slate-400">Maks. {l.dailyLimit} žinutė/ų per dieną</p>
-            </div>
-            <button
-              onClick={() => handleRemove(l.senderId)}
-              className="text-slate-300 hover:text-red-500 text-sm"
-            >
-              Šalinti
-            </button>
-          </div>
-        ))}
+      {/* Esami limitai */}
+      <div className="flex items-center justify-between mb-3">
+        <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)', paddingLeft: '5px' }}>
+          Nustatyti limitai ({limits.length})
+        </p>
       </div>
+      {limits.length === 0 && (
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Nėra nustatytų limitų.</p>
+      )}
+      <AnimatePresence>
+        <div className="flex flex-col gap-2">
+          {limits.map((l) => (
+            <motion.div
+              key={l.id}
+              layout
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="glass px-5 py-3 flex items-center justify-between"
+            >
+              <div className="min-w-0 flex-1" style={{ paddingLeft: '5px' }}>
+                <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
+                  {l.senderFirstName}
+                </p>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                  Maks. {l.dailyLimit} žinutė/ų per dieną
+                </p>
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                onClick={() => handleRemove(l.senderId)}
+                className="p-1.5 rounded-lg transition-colors"
+                style={{ color: 'var(--text-muted)' }}
+                onMouseEnter={e => e.currentTarget.style.color = '#be185d'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+              >
+                <Trash2 size={15} />
+              </motion.button>
+            </motion.div>
+          ))}
+        </div>
+      </AnimatePresence>
     </div>
   )
 }

@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface UserUniqueWishRepository extends JpaRepository<UserUniqueWish, Long> {
 
@@ -17,6 +18,8 @@ public interface UserUniqueWishRepository extends JpaRepository<UserUniqueWish, 
     List<UserUniqueWish> findAllByUniqueWish(UniqueWish uniqueWish);
 
     boolean existsByUserAndUniqueWish(User user, UniqueWish uniqueWish);
+
+    Optional<UserUniqueWish> findByUserAndUniqueWish(User user, UniqueWish uniqueWish);
 
     void deleteAllByUser(User user);
 

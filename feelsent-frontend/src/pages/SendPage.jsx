@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Send, ChevronLeft, Heart, Sparkles, RefreshCw } from 'lucide-react'
 import { getAll } from '../api/friendships'
 import { suggest } from '../api/wishes'
 import { getAll as getFavorites, add as addFavorite } from '../api/favorites'
@@ -7,9 +9,14 @@ import { getLimitInfo } from '../api/limits'
 import { getMyUnique } from '../api/uniqueWishes'
 
 const SEND_MODES = [
-  { value: 'SIMPLE', label: '📨 Paprastas', desc: 'Gavėjas iš karto mato tekstą' },
-  { value: 'GUESS', label: '🎭 Atspėk', desc: 'Gavėjas mato tik paveikslėlį ir turi atspėti toną' },
+  { value: 'SIMPLE', label: 'Paprastas',  desc: 'Gavėjas iš karto mato tekstą', emoji: '📨' },
+  { value: 'GUESS',  label: 'Gavėjas turi atspėti', desc: 'Gavėjas nemato palinkėjimo, turi atspėti palinkėjimo toną', emoji: '🎭' },
 ]
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } },
+}
 
 export default function SendPage() {
   const [step, setStep] = useState(1)
@@ -34,20 +41,33 @@ export default function SendPage() {
 
   const getLimitLabel = () => {
     if (!limitInfo) return null
-    if (!limitInfo.limited) return 'Žinučių: Neapribota'
-    return `Žinučių: ${limitInfo.remaining} iš ${limitInfo.dailyLimit} liko (per 24 val.)`
+    if (!limitInfo.limited) return 'Neapribotas skaičius žinučių'
+    return `${limitInfo.remaining} iš ${limitInfo.dailyLimit} žinučių liko šiandien`
   }
 
+  const getLimitColor = () => {
+    if (!limitInfo?.limited) return 'var(--text-muted)'
+    if (limitInfo.remaining === 0) return '#be185d'
+    return 'var(--text-muted)'
+  }
+
+  const getMe = () => JSON.parse(localStorage.getItem('user'))
+
   const getFriendId = (f) => {
-    const me = JSON.parse(localStorage.getItem('user'))
-    if (f.senderId === me?.id) return f.receiverId
-    return f.senderId
+    const me = getMe()
+    return f.senderId === me?.id ? f.receiverId : f.senderId
   }
 
   const getFriendName = (f) => {
-    const me = JSON.parse(localStorage.getItem('user'))
-    if (f.senderId === me?.id) return f.receiverFirstName
-    return f.senderFirstName
+    const me = getMe()
+    return f.senderId === me?.id ? f.receiverFirstName : f.senderFirstName
+  }
+
+  const getFriendMood = (f) => {
+    const me = getMe()
+    return f.senderId === me?.id
+      ? (f.receiverMoodStatusLabel || '😶 Nenustatyta')
+      : (f.senderMoodStatusLabel || '😶 Nenustatyta')
   }
 
   const handleSelectFriend = async (friend) => {
@@ -123,196 +143,327 @@ export default function SendPage() {
   }
 
   if (success) return (
-    <div className="p-8">
-      <div className="max-w-md mx-auto bg-white rounded-xl shadow p-8 text-center">
-        <div className="text-5xl mb-4">✅</div>
-        <h2 className="text-xl font-bold mb-2">Išsiųsta!</h2>
-        <p className="text-slate-500 mb-6">Palinkėjimas išsiųstas sėkmingai.</p>
-        <button onClick={() => setSuccess(false)} className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700">
+    <div className="p-8 flex items-center justify-center min-h-[60vh]">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="glass text-center py-16 px-12 max-w-sm w-full"
+      >
+        <div className="text-6xl mb-4">✅</div>
+        <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Išsiųsta!</h2>
+        <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>Palinkėjimas išsiųstas sėkmingai.</p>
+        <motion.button
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => setSuccess(false)}
+          className="btn-gradient px-8 py-2.5"
+        >
           Siųsti dar
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
     </div>
   )
 
   return (
-    <div className="p-8">
-      <div className="flex items-center gap-2 mb-6">
+    <div className="p-8" style={{ paddingLeft: "2.5rem" }}>
+      {/* Antraštė */}
+      <motion.div
+        initial={{ opacity: 0, y: -16 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center gap-3 mb-8"
+      >
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center"
+          style={{ background: 'linear-gradient(135deg, var(--accent-from), var(--accent-to))' }}
+        >
+          <Send size={20} color="white" strokeWidth={2} />
+        </div>
+        <h1 className="text-2xl font-extrabold" style={{ color: 'var(--text-primary)' }}>Siųsti palinkėjimą</h1>
+      </motion.div>
+
+      {/* Žingsniai */}
+      <div className="flex items-center gap-2 mb-8 max-w-xs">
         {[1, 2, 3].map((s) => (
           <div key={s} className={`flex items-center gap-2 ${s < 3 ? 'flex-1' : ''}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step >= s ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-400'}`}>
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all"
+              style={{
+                background: step >= s
+                  ? 'linear-gradient(135deg, var(--accent-from), var(--accent-to))'
+                  : 'rgba(255,255,255,0.5)',
+                color: step >= s ? 'white' : 'var(--text-muted)',
+                border: step >= s ? 'none' : '1px solid rgba(255,255,255,0.7)',
+              }}
+            >
               {s}
             </div>
-            {s < 3 && <div className={`flex-1 h-0.5 ${step > s ? 'bg-indigo-600' : 'bg-slate-200'}`} />}
+            {s < 3 && (
+              <div
+                className="flex-1 h-0.5 rounded-full transition-all"
+                style={{ background: step > s ? 'var(--accent-from)' : 'rgba(255,255,255,0.5)' }}
+              />
+            )}
           </div>
         ))}
       </div>
 
-      {step === 1 && (
-        <div className="max-w-lg">
-          <h2 className="text-xl font-bold mb-4">Pasirink draugą</h2>
-          {friends.length === 0 && <p className="text-slate-400">Neturi draugų. Eik į Draugai ir pakvieski.</p>}
-          <div className="flex flex-col gap-2">
-            {friends.map((f) => (
-              <button
-                key={f.id}
-                onClick={() => handleSelectFriend(f)}
-                className="bg-white border rounded-xl px-5 py-3 text-left hover:border-indigo-400 hover:bg-indigo-50 transition-colors"
-              >
-                <p className="font-medium">{getFriendName(f)}</p>
-                <p className="text-sm text-slate-400">
-                  {f.relationshipTypeLabel} • Nuotaika: {f.senderId === JSON.parse(localStorage.getItem('user'))?.id ? (f.receiverMoodStatusLabel || '😶 Nenustatyta') : (f.senderMoodStatusLabel || '😶 Nenustatyta')}
+      <AnimatePresence mode="wait">
+        {/* 1 žingsnis — draugo pasirinkimas */}
+        {step === 1 && (
+          <motion.div key="step1" variants={fadeUp} initial="hidden" animate="show" className="max-w-lg">
+            <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+              Pasirink draugą
+            </h2>
+            {friends.length === 0 && (
+              <div className="glass text-center py-10 px-6">
+                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                  Neturi draugų. Eik į Draugai ir pakvieski.
                 </p>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {step === 2 && (
-        <div className="max-w-lg">
-          <div className="flex items-center gap-3 mb-4">
-            <button onClick={() => setStep(1)} className="text-slate-400 hover:text-slate-600">← Atgal</button>
-            <div>
-              <h2 className="text-xl font-bold">Pasirink palinkėjimą</h2>
-              {getLimitLabel() && (
-                <p className={`text-xs mt-0.5 ${limitInfo?.limited && limitInfo?.remaining === 0 ? 'text-red-500' : 'text-slate-400'}`}>
-                  {getLimitLabel()}
-                </p>
-              )}
-            </div>
-          </div>
-          <div className="flex gap-3 mb-4">
-            <button
-              onClick={() => setShowFavorites(false)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium ${!showFavorites ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}
-            >
-              Pasiūlymai
-            </button>
-            <button
-              onClick={() => setShowFavorites(true)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium ${showFavorites ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}
-            >
-              Mano sąrašas ({favorites.length + uniqueFavorites.length})
-            </button>
-          </div>
-          {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
-          <div className="flex flex-col gap-3">
-            {showFavorites ? (
-              <>
-                {uniqueFavorites.map((w) => (
-                  <div
-                    key={'u-' + w.id}
-                    className="bg-violet-50 border border-violet-200 rounded-xl px-5 py-4 flex items-center gap-3 hover:border-violet-400 hover:bg-violet-100 transition-colors cursor-pointer"
-                    onClick={() => handleSelectWish(w)}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium">{w.text}</p>
-                      <p className="text-sm text-violet-400 mt-1">Asmeninis</p>
-                    </div>
-                  </div>
-                ))}
-                {favorites.map((w) => {
-                  const id = w.id || w.wishId
-                  return (
-                    <div
-                      key={id}
-                      className="bg-white border rounded-xl px-5 py-4 flex items-center gap-3 hover:border-indigo-400 hover:bg-indigo-50 transition-colors cursor-pointer"
-                      onClick={() => handleSelectWish(w)}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium">{w.text}</p>
-                        <p className="text-sm text-slate-400 mt-1">{w.toneLabel}</p>
-                      </div>
-                    </div>
-                  )
-                })}
-                {favorites.length === 0 && uniqueFavorites.length === 0 && (
-                  <p className="text-slate-400 text-sm">Nieko nėra.</p>
-                )}
-              </>
-            ) : (
-              <>
-                {wishes.map((w) => {
-                  const id = w.id || w.wishId
-                  const saved = savedWishes.has(id)
-                  return (
-                    <div
-                      key={id}
-                      className="bg-white border rounded-xl px-5 py-4 flex items-center gap-3 hover:border-indigo-400 hover:bg-indigo-50 transition-colors cursor-pointer"
-                      onClick={() => handleSelectWish(w)}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium">{w.text}</p>
-                        <p className="text-sm text-slate-400 mt-1">{w.toneLabel}</p>
-                      </div>
-                      <button
-                        onClick={(e) => handleSave(e, w)}
-                        title={saved ? 'Jau išsaugota' : 'Išsaugoti į mano sąrašą'}
-                        className={`shrink-0 text-lg transition-transform hover:scale-125 ${saved ? 'opacity-40 cursor-default' : ''}`}
-                        disabled={saved}
-                      >
-                        {saved ? '❤️' : '🤍'}
-                      </button>
-                    </div>
-                  )
-                })}
-                {wishes.length === 0 && (
-                  <p className="text-slate-400 text-sm">Nieko nėra.</p>
-                )}
-                {wishPage < maxPage && (
-                  <button
-                    onClick={() => setWishPage((p) => p + 1)}
-                    className="mt-1 text-sm text-indigo-500 hover:text-indigo-700 self-center"
-                  >
-                    Rodyti kitas 3 ({maxPage - wishPage} kart. liko)
-                  </button>
-                )}
-              </>
+              </div>
             )}
-          </div>
-        </div>
-      )}
+            <div className="flex flex-col gap-2">
+              {friends.map((f) => (
+                <motion.button
+                  key={f.id}
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.99 }}
+                  onClick={() => handleSelectFriend(f)}
+                  className="glass text-left px-5 py-3 flex items-center gap-3"
+                >
+                  <div
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
+                    style={{ background: 'linear-gradient(135deg, var(--accent-from), var(--accent-to))' }}
+                  >
+                    {getFriendName(f)?.[0]?.toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
+                      {getFriendName(f)}
+                    </p>
+                    <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
+                      {f.relationshipTypeLabel} · {getFriendMood(f)}
+                    </p>
+                  </div>
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        )}
 
-      {step === 3 && (
-        <div className="max-w-lg">
-          <div className="flex items-center gap-3 mb-4">
-            <button onClick={() => setStep(2)} className="text-slate-400 hover:text-slate-600">← Atgal</button>
-            <div>
-              <h2 className="text-xl font-bold">Siuntimo režimas</h2>
-              {getLimitLabel() && (
-                <p className={`text-xs mt-0.5 ${limitInfo?.limited && limitInfo?.remaining === 0 ? 'text-red-500' : 'text-slate-400'}`}>
-                  {getLimitLabel()}
-                </p>
+        {/* 2 žingsnis — palinkėjimo pasirinkimas */}
+        {step === 2 && (
+          <motion.div key="step2" variants={fadeUp} initial="hidden" animate="show" className="max-w-lg">
+            <div className="flex items-center gap-3 mb-4">
+              <button
+                onClick={() => setStep(1)}
+                className="flex items-center gap-1 text-sm transition-colors"
+                style={{ color: 'var(--text-muted)' }}
+                onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-from)'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+              >
+                <ChevronLeft size={16} /> Atgal
+              </button>
+              <div>
+                <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  Pasirink palinkėjimą
+                </h2>
+                {getLimitLabel() && (
+                  <p className="text-xs mt-0.5" style={{ color: getLimitColor() }}>
+                    {getLimitLabel()}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Tab perjungiklis */}
+            <div className="flex gap-2 mb-4">
+              {[
+                { key: false, label: 'Pasiūlymai', icon: <Sparkles size={14} /> },
+                { key: true,  label: `Mano sąrašas (${favorites.length + uniqueFavorites.length})`, icon: <Heart size={14} /> },
+              ].map(({ key, label, icon }) => (
+                <motion.button
+                  key={String(key)}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => setShowFavorites(key)}
+                  className="flex items-center gap-1.5 py-1.5 rounded-full text-sm font-medium transition-all"
+                  style={showFavorites === key ? {
+                    background: 'linear-gradient(135deg, var(--accent-from), var(--accent-to))',
+                    color: 'white',
+                    paddingLeft: '5px',
+                    paddingRight: '5px',
+                  } : {
+                    background: 'rgba(255,255,255,0.5)',
+                    color: 'var(--text-muted)',
+                    border: '1px solid rgba(255,255,255,0.7)',
+                    paddingLeft: '5px',
+                    paddingRight: '5px',
+                  }}
+                >
+                  {icon} {label}
+                </motion.button>
+              ))}
+            </div>
+
+            {error && <p className="text-sm mb-3" style={{ color: '#be185d' }}>{error}</p>}
+
+            <div className="flex flex-col gap-3">
+              {showFavorites ? (
+                <>
+                  {uniqueFavorites.map((w) => (
+                    <motion.div
+                      key={'u-' + w.id}
+                      whileHover={{ y: -2 }}
+                      whileTap={{ scale: 0.99 }}
+                      className="glass cursor-pointer py-4"
+                      style={{ borderLeft: '3px solid var(--accent-to)', paddingLeft: '25px', paddingRight: '20px' }}
+                      onClick={() => handleSelectWish(w)}
+                    >
+                      <p className="font-medium text-sm break-words" style={{ color: 'var(--text-primary)', wordBreak: 'break-word' }}>{w.text}</p>
+                      <p className="text-xs mt-1" style={{ color: 'var(--accent-to)' }}>Asmeninis palinkėjimas</p>
+                    </motion.div>
+                  ))}
+                  {favorites.map((w) => {
+                    const id = w.id || w.wishId
+                    return (
+                      <motion.div
+                        key={id}
+                        whileHover={{ y: -2 }}
+                        whileTap={{ scale: 0.99 }}
+                        className="glass cursor-pointer py-4"
+                        style={{ paddingLeft: '25px', paddingRight: '20px' }}
+                        onClick={() => handleSelectWish(w)}
+                      >
+                        <p className="font-medium text-sm break-words" style={{ color: 'var(--text-primary)', wordBreak: 'break-word' }}>{w.text}</p>
+                      </motion.div>
+                    )
+                  })}
+                  {favorites.length === 0 && uniqueFavorites.length === 0 && (
+                    <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Sąrašas tuščias.</p>
+                  )}
+                </>
+              ) : (
+                <>
+                  {wishes.map((w) => {
+                    const id = w.id || w.wishId
+                    const saved = savedWishes.has(id)
+                    return (
+                      <motion.div
+                        key={id}
+                        whileHover={{ y: -2 }}
+                        className="glass cursor-pointer py-4 flex items-center gap-3"
+                        style={{ paddingLeft: '25px', paddingRight: '20px' }}
+                        onClick={() => handleSelectWish(w)}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm break-words" style={{ color: 'var(--text-primary)', wordBreak: 'break-word' }}>{w.text}</p>
+                        </div>
+                        <motion.button
+                          whileHover={{ scale: 1.2 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => handleSave(e, w)}
+                          disabled={saved}
+                          className="shrink-0 text-lg"
+                          style={{ opacity: saved ? 0.4 : 1 }}
+                        >
+                          {saved ? '❤️' : '🤍'}
+                        </motion.button>
+                      </motion.div>
+                    )
+                  })}
+                  {wishes.length === 0 && (
+                    <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Nieko nėra.</p>
+                  )}
+                  {wishPage < maxPage && (
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => setWishPage((p) => p + 1)}
+                      className="flex items-center gap-2 self-center text-sm font-medium mt-1"
+                      style={{ color: 'var(--accent-from)' }}
+                    >
+                      <RefreshCw size={14} />
+                      Rodyti kitas 3 ({maxPage - wishPage} kart. liko)
+                    </motion.button>
+                  )}
+                </>
               )}
             </div>
-          </div>
-          <div className="bg-white border rounded-xl p-4 mb-6">
-            <p className="font-medium">{selectedWish.text}</p>
-            <p className="text-sm text-slate-400 mt-1">{selectedWish.toneLabel}</p>
-          </div>
-          <div className="flex flex-col gap-3 mb-6">
-            {SEND_MODES.map((m) => (
+          </motion.div>
+        )}
+
+        {/* 3 žingsnis — siuntimo režimas */}
+        {step === 3 && (
+          <motion.div key="step3" variants={fadeUp} initial="hidden" animate="show" className="max-w-lg">
+            <div className="flex items-center gap-3 mb-4">
               <button
-                key={m.value}
-                onClick={() => setSendMode(m.value)}
-                className={`border-2 rounded-xl px-5 py-4 text-left transition-colors ${sendMode === m.value ? 'border-indigo-600 bg-indigo-50' : 'border-slate-200 hover:border-indigo-300'}`}
+                onClick={() => setStep(2)}
+                className="flex items-center gap-1 text-sm transition-colors"
+                style={{ color: 'var(--text-muted)' }}
+                onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-from)'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
               >
-                <p className="font-medium">{m.label}</p>
-                <p className="text-sm text-slate-500 mt-1">{m.desc}</p>
+                <ChevronLeft size={16} /> Atgal
               </button>
-            ))}
-          </div>
-          {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
-          <button
-            onClick={handleSend}
-            disabled={loading}
-            className="w-full bg-indigo-600 text-white rounded-xl py-3 font-medium hover:bg-indigo-700 disabled:opacity-50"
-          >
-            {loading ? 'Siunčiama...' : '📨 Siųsti'}
-          </button>
-        </div>
-      )}
+              <div>
+                <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  Siuntimo režimas
+                </h2>
+                {getLimitLabel() && (
+                  <p className="text-xs mt-0.5" style={{ color: getLimitColor() }}>
+                    {getLimitLabel()}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Pasirinktas palinkėjimas */}
+            <div
+              className="glass-sm py-4 mb-5"
+              style={{ background: 'rgba(190,24,93,0.06)', paddingLeft: '25px', paddingRight: '20px' }}
+            >
+              <p className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>{selectedWish.text}</p>
+            </div>
+
+            <div className="flex flex-col gap-3 mb-5">
+              {SEND_MODES.map((m) => (
+                <motion.button
+                  key={m.value}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setSendMode(m.value)}
+                  className="glass text-left py-4 transition-all"
+                  style={sendMode === m.value ? {
+                    borderColor: 'var(--accent-from)',
+                    background: 'rgba(190,24,93,0.08)',
+                    paddingLeft: '25px',
+                    paddingRight: '20px',
+                  } : {
+                    paddingLeft: '25px',
+                    paddingRight: '20px',
+                  }}
+                >
+                  <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                    {m.emoji} {m.label}
+                  </p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{m.desc}</p>
+                </motion.button>
+              ))}
+            </div>
+
+            {error && <p className="text-sm mb-3" style={{ color: '#be185d' }}>{error}</p>}
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={handleSend}
+              disabled={loading}
+              className="btn-gradient w-full py-3 flex items-center justify-center gap-2"
+            >
+              <Send size={16} />
+              {loading ? 'Siunčiama...' : 'Siųsti'}
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

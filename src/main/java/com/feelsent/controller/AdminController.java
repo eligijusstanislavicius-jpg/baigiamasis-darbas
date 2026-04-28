@@ -17,6 +17,7 @@ import com.feelsent.service.WishService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -71,10 +72,12 @@ public class AdminController {
         return ResponseEntity.noContent().build();
     }
 
-    // GET /api/admin/wishes – visi aktyvūs palinkėjimai
+    // GET /api/admin/wishes – aktyvūs palinkėjimai su paginacija
     @GetMapping("/wishes")
-    public ResponseEntity<List<WishResponse>> getAllWishes() {
-        return ResponseEntity.ok(wishService.getAllActive());
+    public ResponseEntity<Page<WishResponse>> getAllWishes(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "8") int size) {
+        return ResponseEntity.ok(wishService.getActivePaged(page, size));
     }
 
     // POST /api/admin/wishes – įterpia naują palinkėjimą į DB
@@ -158,10 +161,12 @@ public class AdminController {
         return ResponseEntity.noContent().build();
     }
 
-    // GET /api/admin/unique-wishes – visi unikalūs palinkėjimai
+    // GET /api/admin/unique-wishes – unikalūs palinkėjimai su paginacija
     @GetMapping("/unique-wishes")
-    public ResponseEntity<List<UniqueWishResponse>> getAllUniqueWishes() {
-        return ResponseEntity.ok(uniqueWishService.getAll());
+    public ResponseEntity<Page<UniqueWishResponse>> getAllUniqueWishes(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "8") int size) {
+        return ResponseEntity.ok(uniqueWishService.getAllPaged(page, size));
     }
 
     // POST /api/admin/unique-wishes – sukuria unikalų palinkėjimą

@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Shield, BookOpen, Sparkles, Send } from 'lucide-react'
 import { getUsers, deleteUser, getWishes, addWish, deactivateWish, notifyAll } from '../api/admin'
 import { getAllUnique, createUnique, updateUnique, assignUnique } from '../api/uniqueWishes'
 
@@ -26,16 +28,106 @@ const RELATIONSHIP_OPTIONS = [
 
 const REL_LABEL = Object.fromEntries(RELATIONSHIP_OPTIONS.map(r => [r.value, r.label]))
 
-export default function AdminPage({ defaultTab = 'users' }) {
+const selectStyle = {
+  background: 'rgba(255,255,255,0.55)',
+  backdropFilter: 'blur(10px)',
+  border: '1px solid rgba(255,255,255,0.80)',
+  borderRadius: '12px',
+  padding: '10px 16px',
+  fontSize: '0.9rem',
+  color: 'var(--text-primary)',
+  outline: 'none',
+  width: '100%',
+  fontFamily: 'inherit',
+}
+
+const textareaStyle = {
+  background: 'rgba(255,255,255,0.55)',
+  backdropFilter: 'blur(10px)',
+  border: '1px solid rgba(255,255,255,0.80)',
+  borderRadius: '12px',
+  padding: '10px 16px',
+  fontSize: '0.9rem',
+  color: 'var(--text-primary)',
+  outline: 'none',
+  width: '100%',
+  fontFamily: 'inherit',
+  resize: 'none',
+}
+
+const TABS = [
+  { key: 'notify',  label: 'Pranešimas visiems', Icon: Send },
+  { key: 'wishes',  label: 'Palinkėjimai',        Icon: BookOpen },
+  { key: 'unique',  label: 'Unikalūs',            Icon: Sparkles },
+]
+
+function Pagination({ page, totalPages, onChange }) {
+  if (totalPages <= 1) return null
+
+  const pages = []
+  for (let i = 0; i < totalPages; i++) {
+    if (totalPages <= 7 || i === 0 || i === totalPages - 1 || Math.abs(i - page) <= 1) {
+      pages.push(i)
+    } else if (pages[pages.length - 1] !== '...') {
+      pages.push('...')
+    }
+  }
+
+  return (
+    <div className="flex items-center justify-center gap-1 mt-4 flex-wrap">
+      <button
+        disabled={page === 0}
+        onClick={() => onChange(page - 1)}
+        className="px-2 py-1 rounded-lg text-sm transition-colors"
+        style={{ color: page === 0 ? 'var(--text-muted)' : 'var(--accent-from)', opacity: page === 0 ? 0.4 : 1 }}
+      >
+        ←
+      </button>
+      {pages.map((p, i) =>
+        p === '...' ? (
+          <span key={`dots-${i}`} className="px-1 text-sm" style={{ color: 'var(--text-muted)' }}>...</span>
+        ) : (
+          <button
+            key={p}
+            onClick={() => onChange(p)}
+            className="w-8 h-8 rounded-lg text-sm font-medium transition-all"
+            style={p === page ? {
+              background: 'linear-gradient(135deg, var(--accent-from), var(--accent-to))',
+              color: 'white',
+            } : {
+              background: 'rgba(255,255,255,0.5)',
+              color: 'var(--text-primary)',
+            }}
+          >
+            {p + 1}
+          </button>
+        )
+      )}
+      <button
+        disabled={page === totalPages - 1}
+        onClick={() => onChange(page + 1)}
+        className="px-2 py-1 rounded-lg text-sm transition-colors"
+        style={{ color: page === totalPages - 1 ? 'var(--text-muted)' : 'var(--accent-from)', opacity: page === totalPages - 1 ? 0.4 : 1 }}
+      >
+        →
+      </button>
+    </div>
+  )
+}
+
+export default function AdminPage({ defaultTab = 'notify' }) {
   const [users, setUsers] = useState([])
   const [wishes, setWishes] = useState([])
+  const [wishPage, setWishPage] = useState(0)
+  const [wishTotalPages, setWishTotalPages] = useState(1)
   const [uniqueWishes, setUniqueWishes] = useState([])
+  const [uniquePage, setUniquePage] = useState(0)
+  const [uniqueTotalPages, setUniqueTotalPages] = useState(1)
   const [tab, setTab] = useState(defaultTab)
   const [newWish, setNewWish] = useState({ text: '', tone: 'SUPPORTIVE', relationshipType: 'FRIEND' })
   const [wishErr, setWishErr] = useState('')
   const [notifyAllText, setNotifyAllText] = useState('')
 
-  // Unikalių palinkėjimų state
   const [newUniqueText, setNewUniqueText] = useState('')
   const [newUniqueUserId, setNewUniqueUserId] = useState('')
   const [newUniqueExpiry, setNewUniqueExpiry] = useState('')
@@ -48,14 +140,27 @@ export default function AdminPage({ defaultTab = 'users' }) {
   const [assignExpiry, setAssignExpiry] = useState('')
   const [assignPermanent, setAssignPermanent] = useState(false)
 
+  const loadWishes = async (p = wishPage) => {
+    const res = await getWishes(p)
+    setWishes(res.data.content)
+    setWishTotalPages(res.data.totalPages)
+  }
+
+  const loadUniqueWishes = async (p = uniquePage) => {
+    const res = await getAllUnique(p)
+    setUniqueWishes(res.data.content)
+    setUniqueTotalPages(res.data.totalPages)
+  }
+
   const load = async () => {
-    const [uRes, wRes, uwRes] = await Promise.all([getUsers(), getWishes(), getAllUnique()])
+    const [uRes] = await Promise.all([getUsers()])
     setUsers(uRes.data)
-    setWishes(wRes.data)
-    setUniqueWishes(uwRes.data)
+    await Promise.all([loadWishes(wishPage), loadUniqueWishes(uniquePage)])
   }
 
   useEffect(() => { load() }, [])
+
+  const regularUsers = users.filter(u => u.role === 'USER')
 
   const handleDeleteUser = async (id) => {
     if (!confirm('Tikrai ištrinti vartotoją?')) return
@@ -83,7 +188,7 @@ export default function AdminPage({ defaultTab = 'users' }) {
     try {
       await addWish(newWish)
       setNewWish({ text: '', tone: 'SUPPORTIVE', relationshipType: 'FRIEND' })
-      load()
+      loadWishes(wishPage)
     } catch (err) {
       setWishErr(err.response?.data?.message || 'Klaida')
     }
@@ -91,7 +196,7 @@ export default function AdminPage({ defaultTab = 'users' }) {
 
   const handleDeactivate = async (id) => {
     await deactivateWish(id)
-    load()
+    loadWishes(wishPage)
   }
 
   const handleCreateUnique = async () => {
@@ -106,7 +211,7 @@ export default function AdminPage({ defaultTab = 'users' }) {
       setNewUniqueUserId('')
       setNewUniqueExpiry('')
       setNewUniquePermanent(false)
-      load()
+      loadUniqueWishes(uniquePage)
     } catch (err) {
       setUniqueErr(err.response?.data?.message || 'Klaida')
     }
@@ -118,7 +223,7 @@ export default function AdminPage({ defaultTab = 'users' }) {
       await updateUnique(id, editingUniqueText)
       setEditingUniqueId(null)
       setEditingUniqueText('')
-      load()
+      loadUniqueWishes(uniquePage)
     } catch (err) {
       alert(err.response?.data?.message || 'Klaida')
     }
@@ -134,7 +239,7 @@ export default function AdminPage({ defaultTab = 'users' }) {
       setAssignUserId('')
       setAssignExpiry('')
       setAssignPermanent(false)
-      load()
+      loadUniqueWishes(uniquePage)
     } catch (err) {
       alert(err.response?.data?.message || 'Klaida')
     }
@@ -148,273 +253,393 @@ export default function AdminPage({ defaultTab = 'users' }) {
     return `Dar ${days} d.`
   }
 
-  const regularUsers = users.filter(u => u.role === 'USER')
-
   return (
-    <div className="p-8 max-w-4xl">
-      <h2 className="text-xl font-bold mb-6">🛡️ Administravimas</h2>
+    <div className="p-8 max-w-4xl" style={{ paddingLeft: '2.5rem' }}>
+      {/* Antraštė */}
+      <motion.div
+        initial={{ opacity: 0, y: -16 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center gap-3 mb-8"
+      >
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center"
+          style={{ background: 'linear-gradient(135deg, var(--accent-from), var(--accent-to))' }}
+        >
+          <Shield size={20} color="white" strokeWidth={2} />
+        </div>
+        <h1 className="text-2xl font-extrabold" style={{ color: 'var(--text-primary)' }}>Administravimas</h1>
+      </motion.div>
 
-      <div className="flex gap-3 mb-6">
-        <button
-          onClick={() => setTab('users')}
-          className={`px-5 py-2 rounded-full text-sm font-medium ${tab === 'users' ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-600'}`}
-        >
-          Vartotojai ({regularUsers.length})
-        </button>
-        <button
-          onClick={() => setTab('wishes')}
-          className={`px-5 py-2 rounded-full text-sm font-medium ${tab === 'wishes' ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-600'}`}
-        >
-          Bendri palinkėjimai ({wishes.length})
-        </button>
-        <button
-          onClick={() => setTab('unique')}
-          className={`px-5 py-2 rounded-full text-sm font-medium ${tab === 'unique' ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-600'}`}
-        >
-          Unikalūs ({uniqueWishes.length})
-        </button>
+      {/* Tab mygtukai */}
+      <div className="flex gap-2 mb-6 flex-wrap">
+        {TABS.map(({ key, label, Icon }) => (
+          <motion.button
+            key={key}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => setTab(key)}
+            className="flex items-center justify-center gap-1.5 py-3 rounded-xl text-sm font-medium transition-all"
+            style={tab === key ? {
+              background: 'linear-gradient(135deg, var(--accent-from), var(--accent-to))',
+              color: 'white',
+              paddingLeft: '3px',
+              paddingRight: '3px',
+            } : {
+              background: 'rgba(255,255,255,0.5)',
+              border: '1px solid rgba(255,255,255,0.7)',
+              color: 'var(--text-muted)',
+              paddingLeft: '3px',
+              paddingRight: '3px',
+            }}
+          >
+            <Icon size={14} />
+            {label}
+          </motion.button>
+        ))}
       </div>
 
-      {tab === 'users' && (
-        <div>
-          <div className="flex flex-col gap-2 mb-8">
-            {regularUsers.map((u) => (
-              <div key={u.id} className="bg-white border rounded-xl px-5 py-3 flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-sm">{u.firstName} {u.lastName}</p>
-                  <p className="text-xs text-slate-400">{u.points} taškų</p>
-                </div>
-                <button
-                  onClick={() => handleDeleteUser(u.id)}
-                  className="text-xs text-red-500 hover:text-red-700"
-                >
-                  Ištrinti
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <div className="bg-white border rounded-xl p-5 mb-4">
-            <h3 className="font-semibold mb-3">Pranešimas visiems vartotojams</h3>
-            <textarea
-              className="w-full border rounded-lg px-3 py-2 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
-              rows={2}
-              placeholder="Pranešimo tekstas"
-              value={notifyAllText}
-              onChange={(e) => setNotifyAllText(e.target.value)}
-            />
-            <button
-              onClick={handleNotifyAll}
-              className="bg-red-600 text-white px-5 py-2 rounded-lg text-sm hover:bg-red-700"
-            >
-              Siųsti visiems
-            </button>
-          </div>
-
-        </div>
-      )}
-
-      {tab === 'wishes' && (
-        <div>
-          <div className="bg-white border rounded-xl p-5 mb-5">
-            <h3 className="font-semibold mb-3">Pridėti palinkėjimą</h3>
-            <textarea
-              className="w-full border rounded-lg px-3 py-2 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
-              rows={2}
-              placeholder="Palinkėjimo tekstas"
-              value={newWish.text}
-              onChange={(e) => setNewWish({ ...newWish, text: e.target.value })}
-            />
-            <div className="flex gap-2 mb-3">
-              <div className="flex-1">
-                <label className="text-xs text-slate-500 mb-1 block">Tonas</label>
-                <select
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
-                  value={newWish.tone}
-                  onChange={(e) => setNewWish({ ...newWish, tone: e.target.value })}
-                >
-                  {TONE_OPTIONS.map((t) => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex-1">
-                <label className="text-xs text-slate-500 mb-1 block">Ryšio tipas</label>
-                <select
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
-                  value={newWish.relationshipType}
-                  onChange={(e) => setNewWish({ ...newWish, relationshipType: e.target.value })}
-                >
-                  {RELATIONSHIP_OPTIONS.map((r) => (
-                    <option key={r.value} value={r.value}>{r.label}</option>
-                  ))}
-                </select>
-              </div>
+      <AnimatePresence mode="wait">
+        {/* Pranešimas visiems */}
+        {tab === 'notify' && (
+          <motion.div
+            key="notify"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+          >
+            <div className="glass p-5">
+              <h3 className="font-semibold text-sm mb-3" style={{ color: 'var(--text-primary)', paddingLeft: '5px' }}>
+                Pranešimas visiems vartotojams
+              </h3>
+              <p className="text-xs mb-3" style={{ color: 'var(--text-muted)', paddingLeft: '5px' }}>
+                Pranešimas bus išsiųstas visiems registruotiems vartotojams.
+              </p>
+              <textarea
+                style={{ ...textareaStyle, marginLeft: '5px', width: 'calc(100% - 5px)' }}
+                className="mb-3"
+                rows={3}
+                placeholder="Pranešimo tekstas..."
+                value={notifyAllText}
+                onChange={(e) => setNotifyAllText(e.target.value)}
+              />
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={handleNotifyAll}
+                className="btn-gradient flex items-center gap-2 px-5 py-2"
+                style={{ marginLeft: '5px' }}
+              >
+                <Send size={14} /> Siųsti visiems
+              </motion.button>
             </div>
-            {wishErr && <p className="text-red-500 text-xs mb-2">{wishErr}</p>}
-            <button
-              onClick={handleAddWish}
-              className="bg-red-600 text-white px-5 py-2 rounded-lg text-sm hover:bg-red-700"
-            >
-              Pridėti
-            </button>
-          </div>
+          </motion.div>
+        )}
 
-          <div className="flex flex-col gap-2">
-            {wishes.map((w) => (
-              <div key={w.id} className="bg-white border rounded-xl px-5 py-3 flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">{w.text}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">{w.toneLabel} • {REL_LABEL[w.relationshipType] ?? w.relationshipType}</p>
-                </div>
-                <button
-                  onClick={() => handleDeactivate(w.id)}
-                  className="text-xs text-slate-400 hover:text-red-500 shrink-0"
-                >
-                  Deaktyvuoti
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {tab === 'unique' && (
-        <div>
-          <div className="bg-white border rounded-xl p-5 mb-5">
-            <h3 className="font-semibold mb-3">Sukurti unikalų palinkėjimą</h3>
-            <textarea
-              className="w-full border rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
-              rows={2}
-              placeholder="Palinkėjimo tekstas"
-              value={newUniqueText}
-              onChange={(e) => setNewUniqueText(e.target.value)}
-            />
-            <div className="flex gap-2 mb-3">
-              <div className="flex-1">
-                <label className="text-xs text-slate-500 mb-1 block">Priskirti vartotojui (nebūtina)</label>
-                <select
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
-                  value={newUniqueUserId}
-                  onChange={(e) => setNewUniqueUserId(e.target.value)}
-                >
-                  <option value="">Nepriskirti</option>
-                  {regularUsers.map((u) => (
-                    <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
-                  ))}
-                </select>
-              </div>
-              {newUniqueUserId && (
+        {/* Palinkėjimai */}
+        {tab === 'wishes' && (
+          <motion.div
+            key="wishes"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+          >
+            <div className="glass p-5 mb-5" style={{ paddingLeft: '25px' }}>
+              <h3 className="font-semibold text-sm mb-3" style={{ color: 'var(--text-primary)' }}>
+                Pridėti palinkėjimą
+              </h3>
+              <textarea
+                style={textareaStyle}
+                className="mb-3"
+                rows={2}
+                placeholder="Palinkėjimo tekstas..."
+                value={newWish.text}
+                onChange={(e) => setNewWish({ ...newWish, text: e.target.value })}
+              />
+              <div className="flex gap-2 mb-3">
                 <div className="flex-1">
-                  <label className="text-xs text-slate-500 mb-1 block">Galiojimas</label>
-                  <div className="flex flex-col gap-1">
-                    <label className="flex items-center gap-2 text-sm text-slate-600">
+                  <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Tonas</label>
+                  <select style={selectStyle} value={newWish.tone} onChange={(e) => setNewWish({ ...newWish, tone: e.target.value })}>
+                    {TONE_OPTIONS.map((t) => (
+                      <option key={t.value} value={t.value}>{t.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Ryšio tipas</label>
+                  <select style={selectStyle} value={newWish.relationshipType} onChange={(e) => setNewWish({ ...newWish, relationshipType: e.target.value })}>
+                    {RELATIONSHIP_OPTIONS.map((r) => (
+                      <option key={r.value} value={r.value}>{r.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              {wishErr && <p className="text-xs mb-2" style={{ color: '#be185d' }}>{wishErr}</p>}
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={handleAddWish}
+                className="btn-gradient px-5 py-2"
+              >
+                Pridėti
+              </motion.button>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              {wishes.map((w) => (
+                <div key={w.id} className="glass py-3 flex items-start justify-between gap-3" style={{ paddingLeft: '25px', paddingRight: '25px' }}>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium break-words" style={{ color: 'var(--text-primary)', wordBreak: 'break-word' }}>{w.text}</p>
+                    <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>
+                      {w.toneLabel} · {REL_LABEL[w.relationshipType] ?? w.relationshipType}
+                    </p>
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    onClick={() => handleDeactivate(w.id)}
+                    className="text-xs shrink-0"
+                    style={{ color: 'var(--text-muted)' }}
+                    onMouseEnter={e => e.currentTarget.style.color = '#be185d'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+                  >
+                    Deaktyvuoti
+                  </motion.button>
+                </div>
+              ))}
+            </div>
+            <Pagination page={wishPage} totalPages={wishTotalPages} onChange={(p) => { setWishPage(p); loadWishes(p) }} />
+          </motion.div>
+        )}
+
+        {/* Unikalūs palinkėjimai */}
+        {tab === 'unique' && (
+          <motion.div
+            key="unique"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+          >
+            <div className="glass p-5 mb-5" style={{ paddingLeft: '25px' }}>
+              <h3 className="font-semibold text-sm mb-3" style={{ color: 'var(--text-primary)' }}>
+                Sukurti unikalų palinkėjimą
+              </h3>
+              <textarea
+                style={textareaStyle}
+                className="mb-3"
+                rows={2}
+                placeholder="Palinkėjimo tekstas..."
+                value={newUniqueText}
+                onChange={(e) => setNewUniqueText(e.target.value)}
+              />
+              <div className="flex gap-2 mb-3">
+                <div className="flex-1">
+                  <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>
+                    Priskirti vartotojui (nebūtina)
+                  </label>
+                  <select
+                    style={selectStyle}
+                    value={newUniqueUserId}
+                    onChange={(e) => setNewUniqueUserId(e.target.value)}
+                  >
+                    <option value="">Nepriskirti</option>
+                    {regularUsers.map((u) => (
+                      <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
+                    ))}
+                  </select>
+                </div>
+                {newUniqueUserId && (
+                  <div className="flex-1">
+                    <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Galiojimas</label>
+                    <label className="flex items-center gap-2 text-sm mb-1" style={{ color: 'var(--text-primary)' }}>
                       <input type="checkbox" checked={newUniquePermanent} onChange={(e) => setNewUniquePermanent(e.target.checked)} />
                       Iki ištrynimo
                     </label>
                     {!newUniquePermanent && (
-                      <input
-                        type="datetime-local"
-                        className="border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
-                        value={newUniqueExpiry}
-                        onChange={(e) => setNewUniqueExpiry(e.target.value)}
-                      />
+                      <div className="flex gap-1 items-center flex-wrap">
+                        <input
+                          type="date"
+                          className="glass-input"
+                          style={{ minWidth: 0, flex: 1 }}
+                          value={newUniqueExpiry.split('T')[0] || ''}
+                          onChange={(e) => setNewUniqueExpiry(e.target.value + 'T' + (newUniqueExpiry.split('T')[1] || '00:00'))}
+                        />
+                        <select
+                          className="glass-input"
+                          style={{ width: '60px', paddingLeft: '6px', paddingRight: '4px' }}
+                          value={newUniqueExpiry.split('T')[1]?.split(':')[0] || '00'}
+                          onChange={(e) => setNewUniqueExpiry((newUniqueExpiry.split('T')[0] || '') + 'T' + e.target.value + ':' + (newUniqueExpiry.split('T')[1]?.split(':')[1] || '00'))}
+                        >
+                          {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')).map(h => <option key={h} value={h}>{h}</option>)}
+                        </select>
+                        <span style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>:</span>
+                        <select
+                          className="glass-input"
+                          style={{ width: '60px', paddingLeft: '6px', paddingRight: '4px' }}
+                          value={newUniqueExpiry.split('T')[1]?.split(':')[1] || '00'}
+                          onChange={(e) => setNewUniqueExpiry((newUniqueExpiry.split('T')[0] || '') + 'T' + (newUniqueExpiry.split('T')[1]?.split(':')[0] || '00') + ':' + e.target.value)}
+                        >
+                          {['00','05','10','15','20','25','30','35','40','45','50','55'].map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                      </div>
                     )}
                   </div>
-                </div>
-              )}
-            </div>
-            {uniqueErr && <p className="text-red-500 text-xs mb-2">{uniqueErr}</p>}
-            <button
-              onClick={handleCreateUnique}
-              className="bg-red-600 text-white px-5 py-2 rounded-lg text-sm hover:bg-red-700"
-            >
-              Sukurti
-            </button>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            {uniqueWishes.length === 0 && <p className="text-slate-400 text-sm">Nėra unikalių palinkėjimų.</p>}
-            {uniqueWishes.map((w) => (
-              <div key={w.id} className="bg-white border rounded-xl p-4">
-                {editingUniqueId === w.id ? (
-                  <div className="flex gap-2 mb-3">
-                    <input
-                      className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
-                      value={editingUniqueText}
-                      onChange={(e) => setEditingUniqueText(e.target.value)}
-                    />
-                    <button onClick={() => handleUpdateUnique(w.id)} className="bg-red-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-red-700">Išsaugoti</button>
-                    <button onClick={() => setEditingUniqueId(null)} className="text-slate-400 text-sm px-2">Atšaukti</button>
-                  </div>
-                ) : (
-                  <div className="flex items-start justify-between gap-3 mb-2">
-                    <p className="text-sm font-medium flex-1">{w.text}</p>
-                    <button
-                      onClick={() => { setEditingUniqueId(w.id); setEditingUniqueText(w.text) }}
-                      className="text-xs text-slate-400 hover:text-red-500 shrink-0"
-                    >
-                      Redaguoti
-                    </button>
-                  </div>
-                )}
-
-                {w.assignments.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {w.assignments.map((a) => (
-                      <span key={a.userUniqueWishId} className="text-xs bg-slate-100 px-2 py-0.5 rounded-full text-slate-600">
-                        {a.firstName} {a.lastName} · {expiryLabel(a.expiresAt)}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {assigningId === w.id ? (
-                  <div className="border-t pt-3 mt-2 flex flex-wrap gap-2 items-end">
-                    <div>
-                      <label className="text-xs text-slate-500 mb-1 block">Vartotojas</label>
-                      <select
-                        className="border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
-                        value={assignUserId}
-                        onChange={(e) => setAssignUserId(e.target.value)}
-                      >
-                        <option value="">Pasirink</option>
-                        {regularUsers.map((u) => (
-                          <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-xs text-slate-500 mb-1 block">Galiojimas</label>
-                      <label className="flex items-center gap-1 text-xs text-slate-600 mb-1">
-                        <input type="checkbox" checked={assignPermanent} onChange={(e) => setAssignPermanent(e.target.checked)} />
-                        Iki ištrynimo
-                      </label>
-                      {!assignPermanent && (
-                        <input
-                          type="datetime-local"
-                          className="border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
-                          value={assignExpiry}
-                          onChange={(e) => setAssignExpiry(e.target.value)}
-                        />
-                      )}
-                    </div>
-                    <button onClick={() => handleAssignUnique(w.id)} className="bg-red-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-red-700">Priskirti</button>
-                    <button onClick={() => setAssigningId(null)} className="text-slate-400 text-sm px-2">Atšaukti</button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => { setAssigningId(w.id); setAssignUserId(''); setAssignExpiry(''); setAssignPermanent(false) }}
-                    className="text-xs text-red-600 hover:text-red-700 border border-red-200 rounded-lg px-3 py-1 mt-1"
-                  >
-                    + Priskirti vartotojui
-                  </button>
                 )}
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+              {uniqueErr && <p className="text-xs mb-2" style={{ color: '#be185d' }}>{uniqueErr}</p>}
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={handleCreateUnique}
+                className="btn-gradient px-5 py-2"
+              >
+                Sukurti
+              </motion.button>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {uniqueWishes.length === 0 && (
+                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Nėra unikalių palinkėjimų.</p>
+              )}
+              {uniqueWishes.map((w) => (
+                <div key={w.id} className="glass p-4" style={{ paddingLeft: '25px' }}>
+                  {editingUniqueId === w.id ? (
+                    <div className="flex gap-2 mb-3">
+                      <input
+                        className="glass-input flex-1"
+                        value={editingUniqueText}
+                        onChange={(e) => setEditingUniqueText(e.target.value)}
+                      />
+                      <motion.button
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => handleUpdateUnique(w.id)}
+                        className="btn-gradient px-3 py-1.5 text-sm"
+                      >
+                        Išsaugoti
+                      </motion.button>
+                      <button
+                        onClick={() => setEditingUniqueId(null)}
+                        className="text-sm px-2"
+                        style={{ color: 'var(--text-muted)' }}
+                      >
+                        Atšaukti
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <p className="text-sm font-medium flex-1" style={{ color: 'var(--text-primary)' }}>{w.text}</p>
+                      <button
+                        onClick={() => { setEditingUniqueId(w.id); setEditingUniqueText(w.text) }}
+                        className="text-xs shrink-0"
+                        style={{ color: 'var(--text-muted)' }}
+                        onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-from)'}
+                        onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+                      >
+                        Redaguoti
+                      </button>
+                    </div>
+                  )}
+
+                  {w.assignments?.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {w.assignments.map((a) => (
+                        <span
+                          key={a.userUniqueWishId}
+                          className="text-xs px-2 py-0.5 rounded-full"
+                          style={{ background: 'rgba(255,255,255,0.5)', color: 'var(--text-muted)' }}
+                        >
+                          {a.firstName} {a.lastName} · {expiryLabel(a.expiresAt)}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {assigningId === w.id ? (
+                    <div
+                      className="pt-3 mt-2 flex flex-wrap gap-2 items-end"
+                      style={{ borderTop: '1px solid rgba(255,255,255,0.5)' }}
+                    >
+                      <div>
+                        <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Vartotojas</label>
+                        <select
+                          style={{ ...selectStyle, width: 'auto' }}
+                          value={assignUserId}
+                          onChange={(e) => setAssignUserId(e.target.value)}
+                        >
+                          <option value="">Pasirink</option>
+                          {regularUsers.map((u) => (
+                            <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Galiojimas</label>
+                        <label className="flex items-center gap-1 text-xs mb-1" style={{ color: 'var(--text-primary)' }}>
+                          <input type="checkbox" checked={assignPermanent} onChange={(e) => setAssignPermanent(e.target.checked)} />
+                          Iki ištrynimo
+                        </label>
+                        {!assignPermanent && (
+                          <div className="flex gap-1 items-center flex-wrap">
+                            <input
+                              type="date"
+                              className="glass-input"
+                              style={{ padding: '6px 8px', fontSize: '0.8rem', minWidth: 0, flex: 1 }}
+                              value={assignExpiry.split('T')[0] || ''}
+                              onChange={(e) => setAssignExpiry(e.target.value + 'T' + (assignExpiry.split('T')[1] || '00:00'))}
+                            />
+                            <select
+                              className="glass-input"
+                              style={{ padding: '6px 4px', fontSize: '0.8rem', width: '55px' }}
+                              value={assignExpiry.split('T')[1]?.split(':')[0] || '00'}
+                              onChange={(e) => setAssignExpiry((assignExpiry.split('T')[0] || '') + 'T' + e.target.value + ':' + (assignExpiry.split('T')[1]?.split(':')[1] || '00'))}
+                            >
+                              {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')).map(h => <option key={h} value={h}>{h}</option>)}
+                            </select>
+                            <span style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>:</span>
+                            <select
+                              className="glass-input"
+                              style={{ padding: '6px 4px', fontSize: '0.8rem', width: '55px' }}
+                              value={assignExpiry.split('T')[1]?.split(':')[1] || '00'}
+                              onChange={(e) => setAssignExpiry((assignExpiry.split('T')[0] || '') + 'T' + (assignExpiry.split('T')[1]?.split(':')[0] || '00') + ':' + e.target.value)}
+                            >
+                              {['00','05','10','15','20','25','30','35','40','45','50','55'].map(m => <option key={m} value={m}>{m}</option>)}
+                            </select>
+                          </div>
+                        )}
+                      </div>
+                      <motion.button
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => handleAssignUnique(w.id)}
+                        className="btn-gradient px-3 py-1.5 text-sm"
+                      >
+                        Priskirti
+                      </motion.button>
+                      <button
+                        onClick={() => setAssigningId(null)}
+                        className="text-sm px-2"
+                        style={{ color: 'var(--text-muted)' }}
+                      >
+                        Atšaukti
+                      </button>
+                    </div>
+                  ) : (
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      onClick={() => { setAssigningId(w.id); setAssignUserId(''); setAssignExpiry(''); setAssignPermanent(false) }}
+                      className="text-xs font-medium px-3 py-1.5 rounded-xl mt-1"
+                      style={{
+                        color: 'var(--accent-from)',
+                        border: '1px solid rgba(190,24,93,0.3)',
+                        background: 'rgba(190,24,93,0.06)',
+                      }}
+                    >
+                      + Priskirti vartotojui
+                    </motion.button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <Pagination page={uniquePage} totalPages={uniqueTotalPages} onChange={(p) => { setUniquePage(p); loadUniqueWishes(p) }} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

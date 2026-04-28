@@ -13,6 +13,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -64,11 +67,17 @@ public class UniqueWishService {
                 .toList();
     }
 
-    // Vartotojas mato savo unikalius palinkėjimus
+    public Page<UniqueWishResponse> getAllPaged(int page, int size) {
+        return uniqueWishRepository.findAll(PageRequest.of(page, size)).map(this::toResponse);
+    }
+
+    // Vartotojas mato savo unikalius palinkėjimus (tik negaliojusius)
     public List<UserUniqueWishResponse> getMyUniqueWishes(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("Vartotojas nerastas"));
+        LocalDateTime now = LocalDateTime.now();
         return userUniqueWishRepository.findAllByUser(user).stream()
+                .filter(a -> a.getExpiresAt() == null || a.getExpiresAt().isAfter(now))
                 .map(this::toUserResponse)
                 .toList();
     }

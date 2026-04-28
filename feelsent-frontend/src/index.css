@@ -6,8 +6,134 @@
   padding: 0;
 }
 
+/* ── Šriftai ─────────────────────────────── */
 body {
-  font-family: system-ui, -apple-system, sans-serif;
-  background: #f8fafc;
-  color: #1e293b;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
 }
+
+/* ── Šviesi tema (default) ───────────────── */
+:root {
+  --accent-from: #be185d;
+  --accent-to:   #7c3aed;
+  --text-primary:   #1e1b4b;
+  --text-muted:     rgba(30, 27, 75, 0.55);
+  --glass-bg:       rgba(255, 255, 255, 0.72);
+  --glass-border:   rgba(255, 255, 255, 0.90);
+  --glass-shadow:   rgba(190, 24, 93, 0.10);
+  --sidebar-bg:     rgba(255, 255, 255, 0.65);
+  --sidebar-border: rgba(255, 255, 255, 0.85);
+}
+
+/* ── Fonas su gėle (šviesi tema) ─────────── */
+#root {
+  min-height: 100vh;
+  background:
+    linear-gradient(rgba(255,255,255,0.52), rgba(255,255,255,0.52)),
+    url('/flower-bg.jpg') center/cover fixed;
+}
+
+/* ── Glass card ──────────────────────────── */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px var(--glass-shadow);
+  overflow: hidden;
+}
+
+.glass-sm {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  box-shadow: 0 4px 16px var(--glass-shadow);
+  overflow: hidden;
+}
+
+/* ── Gradientinis mygtukas ───────────────── */
+.btn-gradient {
+  background: linear-gradient(135deg, var(--accent-from), var(--accent-to));
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+}
+.btn-gradient:hover {
+  opacity: 0.88;
+  transform: translateY(-1px);
+}
+.btn-gradient:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Gradientinis tekstas ────────────────── */
+.text-gradient {
+  background: linear-gradient(135deg, var(--accent-from), var(--accent-to));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Glass input ─────────────────────────── */
+.glass-input {
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.80);
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+}
+.glass-input::placeholder {
+  color: var(--text-muted);
+}
+.glass-input:focus {
+  border-color: var(--accent-from);
+  box-shadow: 0 0 0 3px rgba(190, 24, 93, 0.12);
+}
+
+/* ── Pulse animacija (unread badge) ──────── */
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(190, 24, 93, 0.60); }
+  70%  { box-shadow: 0 0 0 7px rgba(190, 24, 93, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(190, 24, 93, 0); }
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #be185d, #7c3aed);
+  animation: pulse-ring 1.6s ease-out infinite;
+  display: inline-block;
+}
+
+@keyframes icon-pulse {
+  0%   { filter: drop-shadow(0 0 0px rgba(190, 24, 93, 0.9)); }
+  70%  { filter: drop-shadow(0 0 6px rgba(190, 24, 93, 0)); }
+  100% { filter: drop-shadow(0 0 0px rgba(190, 24, 93, 0)); }
+}
+
+.icon-pulse {
+  animation: icon-pulse 1.6s ease-out infinite;
+  color: #be185d !important;
+}
+
+/* ── Scrollbar ───────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(190,24,93,0.25); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(190,24,93,0.45); }

@@ -17,6 +17,9 @@ import com.feelsent.repository.WishRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -138,6 +141,10 @@ public class WishService {
                 .stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    public Page<WishResponse> getActivePaged(int page, int size) {
+        return wishRepository.findAllByActiveTrue(PageRequest.of(page, size)).map(this::toResponse);
     }
 
     // Draugo moodWant → WishTone (automatinis pasiūlymų tonas)

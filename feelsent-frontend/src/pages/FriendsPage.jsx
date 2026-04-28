@@ -1,21 +1,45 @@
 import { useEffect, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Users, Search, UserPlus, Check, X, Trash2 } from 'lucide-react'
 import { getAll, getPending, sendRequest, accept, decline, remove } from '../api/friendships'
 import api from '../api/axios'
 
 const REL_TYPES = [
-  { value: 'FRIEND', label: 'Draugas' },
-  { value: 'PARTNER', label: 'Partneris' },
-  { value: 'HUSBAND', label: 'Vyras' },
-  { value: 'WIFE', label: 'Žmona' },
-  { value: 'MOTHER', label: 'Mama' },
-  { value: 'FATHER', label: 'Tėtis' },
-  { value: 'SON', label: 'Sūnus' },
-  { value: 'DAUGHTER', label: 'Duktė' },
-  { value: 'BROTHER', label: 'Brolis' },
-  { value: 'SISTER', label: 'Sesuo' },
+  { value: 'FRIEND',      label: 'Draugas' },
+  { value: 'PARTNER',     label: 'Partneris' },
+  { value: 'HUSBAND',     label: 'Vyras' },
+  { value: 'WIFE',        label: 'Žmona' },
+  { value: 'MOTHER',      label: 'Mama' },
+  { value: 'FATHER',      label: 'Tėtis' },
+  { value: 'SON',         label: 'Sūnus' },
+  { value: 'DAUGHTER',    label: 'Duktė' },
+  { value: 'BROTHER',     label: 'Brolis' },
+  { value: 'SISTER',      label: 'Sesuo' },
   { value: 'GRANDFATHER', label: 'Senelis' },
   { value: 'GRANDMOTHER', label: 'Močiutė' },
 ]
+
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06 } },
+}
+const item = {
+  hidden: { opacity: 0, y: 16 },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] } },
+}
+
+const selectStyle = {
+  background: 'rgba(255,255,255,0.55)',
+  backdropFilter: 'blur(10px)',
+  border: '1px solid rgba(255,255,255,0.80)',
+  borderRadius: '12px',
+  padding: '10px 16px',
+  fontSize: '0.9rem',
+  color: 'var(--text-primary)',
+  outline: 'none',
+  width: '100%',
+  fontFamily: 'inherit',
+}
 
 export default function FriendsPage() {
   const [friends, setFriends] = useState([])
@@ -95,128 +119,221 @@ export default function FriendsPage() {
 
   const getFriendName = (f) => {
     const me = getMe()
-    if (f.senderId === me?.id) return f.receiverFirstName
-    return f.senderFirstName
+    return f.senderId === me?.id ? f.receiverFirstName : f.senderFirstName
   }
 
   const getMyRelLabel = (f) => {
     const me = getMe()
-    if (f.senderId === me?.id) return f.senderRelationshipTypeLabel
-    return f.receiverRelationshipTypeLabel
+    return f.senderId === me?.id ? f.senderRelationshipTypeLabel : f.receiverRelationshipTypeLabel
   }
 
   const getFriendMood = (f) => {
     const me = getMe()
-    if (f.senderId === me?.id) return f.receiverMoodStatusLabel || '😶 Nenustatyta'
-    return f.senderMoodStatusLabel || '😶 Nenustatyta'
+    return f.senderId === me?.id
+      ? (f.receiverMoodStatusLabel || '😶 Nenustatyta')
+      : (f.senderMoodStatusLabel || '😶 Nenustatyta')
   }
 
   return (
-    <div className="p-8 max-w-2xl">
-      <h2 className="text-xl font-bold mb-6">👥 Draugai</h2>
+    <div className="p-8 max-w-2xl" style={{ paddingLeft: "2.5rem" }}>
+      {/* Antraštė */}
+      <motion.div
+        initial={{ opacity: 0, y: -16 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center gap-3 mb-8"
+      >
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center"
+          style={{ background: 'linear-gradient(135deg, var(--accent-from), var(--accent-to))' }}
+        >
+          <Users size={20} color="white" strokeWidth={2} />
+        </div>
+        <h1 className="text-2xl font-extrabold" style={{ color: 'var(--text-primary)' }}>Draugai</h1>
+      </motion.div>
 
       {/* Pakvietimo forma */}
-      <div className="bg-white border rounded-xl p-6 mb-6">
-        <h3 className="font-semibold mb-3">Pakviesti draugą</h3>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="glass p-6 mb-6"
+      >
+        <div className="flex items-center gap-2 mb-4" style={{ paddingLeft: '5px' }}>
+          <UserPlus size={16} style={{ color: 'var(--accent-from)' }} />
+          <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Pakviesti draugą</h3>
+        </div>
         <div className="flex gap-2 mb-3">
           <input
-            className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="glass-input flex-1"
             placeholder="El. paštas"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           />
-          <button
+          <motion.button
+            whileHover={{ y: -1 }}
+            whileTap={{ scale: 0.97 }}
             onClick={handleSearch}
-            className="bg-slate-100 px-4 py-2 rounded-lg text-sm hover:bg-slate-200"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium"
+            style={{
+              background: 'rgba(255,255,255,0.6)',
+              border: '1px solid rgba(255,255,255,0.8)',
+              color: 'var(--text-primary)',
+            }}
           >
-            Ieškoti
-          </button>
+            <Search size={15} /> Ieškoti
+          </motion.button>
         </div>
-        {searchErr && <p className="text-red-500 text-sm mb-2">{searchErr}</p>}
+        {searchErr && <p className="text-sm mb-2" style={{ color: '#be185d' }}>{searchErr}</p>}
         {searchResult && (
-          <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 mb-3">
-            <p className="font-medium text-sm">{searchResult.firstName} {searchResult.lastName}</p>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="glass-sm px-4 py-3 mb-3"
+            style={{ background: 'rgba(190,24,93,0.06)' }}
+          >
+            <p className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>
+              {searchResult.firstName} {searchResult.lastName}
+            </p>
+          </motion.div>
         )}
-        <label className="block text-xs text-slate-500 mb-1">Kas šis žmogus man yra?</label>
-        <select
-          className="w-full border rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          value={relType}
-          onChange={(e) => setRelType(e.target.value)}
-        >
+        <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>
+          Kas šis žmogus man yra?
+        </label>
+        <select style={selectStyle} className="mb-3" value={relType} onChange={(e) => setRelType(e.target.value)}>
           {REL_TYPES.map((r) => (
             <option key={r.value} value={r.value}>{r.label}</option>
           ))}
         </select>
-        {sendErr && <p className="text-red-500 text-sm mb-2">{sendErr}</p>}
-        <button
+        {sendErr && <p className="text-sm mb-2" style={{ color: '#be185d' }}>{sendErr}</p>}
+        <motion.button
+          whileHover={{ y: -1 }}
+          whileTap={{ scale: 0.97 }}
           onClick={handleSend}
           disabled={!searchResult || loading}
-          className="w-full bg-indigo-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-indigo-700 disabled:opacity-40"
+          className="btn-gradient w-full py-2.5"
         >
           Siųsti užklausą
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
 
       {/* Laukiančios užklausos */}
-      {pending.length > 0 && (
-        <div className="mb-6">
-          <h3 className="font-semibold mb-3 text-orange-600">⏳ Laukia patvirtinimo ({pending.length})</h3>
-          <div className="flex flex-col gap-2">
-            {pending.map((f) => (
-              <div key={f.id} className="bg-white border border-orange-200 rounded-xl px-5 py-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <p className="font-medium text-sm">{f.senderFirstName}</p>
-                    <p className="text-xs text-slate-400">nori prisijungti kaip: {f.senderRelationshipTypeLabel}</p>
+      <AnimatePresence>
+        {pending.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="mb-6"
+          >
+            <p
+              className="text-xs font-bold uppercase tracking-wide mb-3"
+              style={{ color: 'var(--accent-from)' }}
+            >
+              ⏳ Laukia patvirtinimo ({pending.length})
+            </p>
+            <div className="flex flex-col gap-2">
+              {pending.map((f) => (
+                <motion.div
+                  key={f.id}
+                  layout
+                  className="glass p-4"
+                  style={{ borderLeft: '3px solid var(--accent-from)' }}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                        {f.senderFirstName}
+                      </p>
+                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                        nori prisijungti kaip: {f.senderRelationshipTypeLabel}
+                      </p>
+                    </div>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      onClick={() => handleDecline(f.id)}
+                      className="p-1.5 rounded-lg"
+                      style={{ color: '#be185d' }}
+                    >
+                      <X size={15} />
+                    </motion.button>
                   </div>
-                  <button onClick={() => handleDecline(f.id)} className="text-red-400 hover:text-red-600 text-sm">❌</button>
-                </div>
-                <label className="block text-xs text-slate-500 mb-1">Kas man yra šis žmogus?</label>
-                <div className="flex gap-2">
-                  <select
-                    className="flex-1 border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                    value={acceptTypes[f.id] || 'FRIEND'}
-                    onChange={(e) => setAcceptTypes((prev) => ({ ...prev, [f.id]: e.target.value }))}
-                  >
-                    {REL_TYPES.map((r) => (
-                      <option key={r.value} value={r.value}>{r.label}</option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={() => handleAccept(f.id)}
-                    className="bg-green-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-green-700"
-                  >
-                    ✅ Priimti
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+                  <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>
+                    Kas man yra šis žmogus?
+                  </label>
+                  <div className="flex gap-2">
+                    <select
+                      style={{ ...selectStyle, flex: 1 }}
+                      value={acceptTypes[f.id] || 'FRIEND'}
+                      onChange={(e) => setAcceptTypes((prev) => ({ ...prev, [f.id]: e.target.value }))}
+                    >
+                      {REL_TYPES.map((r) => (
+                        <option key={r.value} value={r.value}>{r.label}</option>
+                      ))}
+                    </select>
+                    <motion.button
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => handleAccept(f.id)}
+                      className="btn-gradient flex items-center gap-1.5 px-4 py-2"
+                    >
+                      <Check size={14} /> Priimti
+                    </motion.button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Draugų sąrašas */}
-      <h3 className="font-semibold mb-3">Draugai ({friends.length})</h3>
-      {friends.length === 0 && <p className="text-slate-400 text-sm">Kol kas draugų nėra.</p>}
-      <div className="flex flex-col gap-2">
-        {friends.map((f) => (
-          <div key={f.id} className="bg-white border rounded-xl px-5 py-3 flex items-center justify-between">
-            <div>
-              <p className="font-medium text-sm">{getFriendName(f)}</p>
-              <p className="text-xs text-slate-400">
-                {getMyRelLabel(f)} • Nuotaika: {getFriendMood(f)}
-              </p>
-            </div>
-            <button
-              onClick={() => handleRemove(f.id)}
-              className="text-slate-300 hover:text-red-500 text-sm"
-            >
-              Šalinti
-            </button>
-          </div>
-        ))}
+      <div className="flex items-center justify-between mb-3">
+        <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+          Draugai ({friends.length})
+        </p>
       </div>
+      {friends.length === 0 && (
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Kol kas draugų nėra.</p>
+      )}
+      <motion.div className="flex flex-col gap-2" variants={stagger} initial="hidden" animate="show">
+        {friends.map((f) => (
+          <motion.div
+            key={f.id}
+            variants={item}
+            layout
+            className="glass py-3 flex items-center justify-between"
+            style={{ paddingLeft: '1px', paddingRight: '30px' }}
+          >
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div
+                className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
+                style={{ background: 'linear-gradient(135deg, var(--accent-from), var(--accent-to))' }}
+              >
+                {getFriendName(f)?.[0]?.toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
+                  {getFriendName(f)}
+                </p>
+                <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
+                  {getMyRelLabel(f)} · {getFriendMood(f)}
+                </p>
+              </div>
+            </div>
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              onClick={() => handleRemove(f.id)}
+              className="p-1.5 rounded-lg transition-colors"
+              style={{ color: 'var(--text-muted)' }}
+              onMouseEnter={e => e.currentTarget.style.color = '#be185d'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+            >
+              <Trash2 size={15} />
+            </motion.button>
+          </motion.div>
+        ))}
+      </motion.div>
     </div>
   )
 }
