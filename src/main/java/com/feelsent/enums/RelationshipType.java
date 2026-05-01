@@ -17,7 +17,8 @@ public enum RelationshipType {
     BROTHER("Brolis"),
     SISTER("Sesuo"),
     GRANDFATHER("Senelis"),
-    GRANDMOTHER("Močiutė");
+    GRANDMOTHER("Močiutė"),
+    ALL("Visiems");
 
     private final String label;
 }

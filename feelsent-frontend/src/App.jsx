@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { NotificationProvider } from './context/NotificationContext'
 import Sidebar from './components/Sidebar'
 import MoodPromptModal from './components/MoodPromptModal'
 
@@ -15,6 +16,7 @@ import LimitsPage from './pages/LimitsPage'
 import AdminPage from './pages/AdminPage'
 import AdminUsersPage from './pages/AdminUsersPage'
 import ContactPage from './pages/ContactPage'
+import HelpPage from './pages/HelpPage'
 
 /* Sidebar mount'inamas VIENĄ kartą čia — state išlieka naviguojant */
 function AuthenticatedLayout() {
@@ -33,6 +35,7 @@ function AuthenticatedLayout() {
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/limits"        element={<LimitsPage />} />
           <Route path="/contact"       element={<ContactPage />} />
+          <Route path="/help"          element={<HelpPage />} />
           <Route path="/admin"         element={isAdmin() ? <AdminPage defaultTab="notify" />  : <Navigate to="/inbox" replace />} />
           <Route path="/admin/wishes"  element={isAdmin() ? <AdminPage defaultTab="wishes" />  : <Navigate to="/inbox" replace />} />
           <Route path="/admin/users"   element={isAdmin() ? <AdminUsersPage />                 : <Navigate to="/inbox" replace />} />
@@ -58,7 +61,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppRoutes />
+        <NotificationProvider>
+          <AppRoutes />
+        </NotificationProvider>
       </AuthProvider>
     </BrowserRouter>
   )

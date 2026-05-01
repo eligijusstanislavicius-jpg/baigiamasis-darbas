@@ -271,7 +271,7 @@ export default function AdminPage({ defaultTab = 'notify' }) {
       </motion.div>
 
       {/* Tab mygtukai */}
-      <div className="flex gap-2 mb-6 flex-wrap">
+      <div className="flex gap-2 flex-wrap" style={{ marginBottom: '10px', marginTop: '12px' }}>
         {TABS.map(({ key, label, Icon }) => (
           <motion.button
             key={key}
@@ -310,7 +310,7 @@ export default function AdminPage({ defaultTab = 'notify' }) {
               <h3 className="font-semibold text-sm mb-3" style={{ color: 'var(--text-primary)', paddingLeft: '5px' }}>
                 Pranešimas visiems vartotojams
               </h3>
-              <p className="text-xs mb-3" style={{ color: 'var(--text-muted)', paddingLeft: '5px' }}>
+              <p className="text-xs mb-3" style={{ color: 'var(--text-primary)', paddingLeft: '5px' }}>
                 Pranešimas bus išsiųstas visiems registruotiems vartotojams.
               </p>
               <textarea
@@ -325,8 +325,8 @@ export default function AdminPage({ defaultTab = 'notify' }) {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={handleNotifyAll}
-                className="btn-gradient flex items-center gap-2 px-5 py-2"
-                style={{ marginLeft: '5px' }}
+                className="btn-gradient flex items-center gap-2 py-2"
+                style={{ marginLeft: '5px', paddingLeft: '8px', paddingRight: '8px' }}
               >
                 <Send size={14} /> Siųsti visiems
               </motion.button>
@@ -342,7 +342,7 @@ export default function AdminPage({ defaultTab = 'notify' }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
           >
-            <div className="glass p-5 mb-5" style={{ paddingLeft: '25px' }}>
+            <div className="glass p-5" style={{ paddingLeft: '25px', marginBottom: '10px' }}>
               <h3 className="font-semibold text-sm mb-3" style={{ color: 'var(--text-primary)' }}>
                 Pridėti palinkėjimą
               </h3>
@@ -356,7 +356,7 @@ export default function AdminPage({ defaultTab = 'notify' }) {
               />
               <div className="flex gap-2 mb-3">
                 <div className="flex-1">
-                  <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Tonas</label>
+                  <label className="text-xs mb-1 block" style={{ color: 'var(--text-primary)' }}>Stilius</label>
                   <select style={selectStyle} value={newWish.tone} onChange={(e) => setNewWish({ ...newWish, tone: e.target.value })}>
                     {TONE_OPTIONS.map((t) => (
                       <option key={t.value} value={t.value}>{t.label}</option>
@@ -364,7 +364,7 @@ export default function AdminPage({ defaultTab = 'notify' }) {
                   </select>
                 </div>
                 <div className="flex-1">
-                  <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Ryšio tipas</label>
+                  <label className="text-xs mb-1 block" style={{ color: 'var(--text-primary)' }}>Ryšio tipas</label>
                   <select style={selectStyle} value={newWish.relationshipType} onChange={(e) => setNewWish({ ...newWish, relationshipType: e.target.value })}>
                     {RELATIONSHIP_OPTIONS.map((r) => (
                       <option key={r.value} value={r.value}>{r.label}</option>
@@ -377,7 +377,8 @@ export default function AdminPage({ defaultTab = 'notify' }) {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={handleAddWish}
-                className="btn-gradient px-5 py-2"
+                className="btn-gradient py-2"
+                style={{ paddingLeft: '5px', paddingRight: '5px' }}
               >
                 Pridėti
               </motion.button>
@@ -417,7 +418,7 @@ export default function AdminPage({ defaultTab = 'notify' }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
           >
-            <div className="glass p-5 mb-5" style={{ paddingLeft: '25px' }}>
+            <div className="glass p-5" style={{ paddingLeft: '25px', marginBottom: '12px' }}>
               <h3 className="font-semibold text-sm mb-3" style={{ color: 'var(--text-primary)' }}>
                 Sukurti unikalų palinkėjimą
               </h3>
@@ -431,7 +432,7 @@ export default function AdminPage({ defaultTab = 'notify' }) {
               />
               <div className="flex gap-2 mb-3">
                 <div className="flex-1">
-                  <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>
+                  <label className="text-xs mb-1 block" style={{ color: 'var(--text-primary)' }}>
                     Priskirti vartotojui (nebūtina)
                   </label>
                   <select
@@ -447,7 +448,7 @@ export default function AdminPage({ defaultTab = 'notify' }) {
                 </div>
                 {newUniqueUserId && (
                   <div className="flex-1">
-                    <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Galiojimas</label>
+                    <label className="text-xs mb-1 block" style={{ color: 'var(--text-primary)' }}>Galiojimas</label>
                     <label className="flex items-center gap-2 text-sm mb-1" style={{ color: 'var(--text-primary)' }}>
                       <input type="checkbox" checked={newUniquePermanent} onChange={(e) => setNewUniquePermanent(e.target.checked)} />
                       Iki ištrynimo
@@ -488,7 +489,8 @@ export default function AdminPage({ defaultTab = 'notify' }) {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={handleCreateUnique}
-                className="btn-gradient px-5 py-2"
+                className="btn-gradient py-2"
+                style={{ paddingLeft: '5px', paddingRight: '5px' }}
               >
                 Sukurti
               </motion.button>
@@ -523,12 +525,12 @@ export default function AdminPage({ defaultTab = 'notify' }) {
                       </button>
                     </div>
                   ) : (
-                    <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex items-center justify-between gap-3 mb-2">
                       <p className="text-sm font-medium flex-1" style={{ color: 'var(--text-primary)' }}>{w.text}</p>
                       <button
                         onClick={() => { setEditingUniqueId(w.id); setEditingUniqueText(w.text) }}
                         className="text-xs shrink-0"
-                        style={{ color: 'var(--text-muted)' }}
+                        style={{ color: 'var(--text-muted)', paddingRight: '10px' }}
                         onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-from)'}
                         onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
                       >
@@ -557,7 +559,7 @@ export default function AdminPage({ defaultTab = 'notify' }) {
                       style={{ borderTop: '1px solid rgba(255,255,255,0.5)' }}
                     >
                       <div>
-                        <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Vartotojas</label>
+                        <label className="text-xs mb-1 block" style={{ color: 'var(--text-primary)' }}>Vartotojas</label>
                         <select
                           style={{ ...selectStyle, width: 'auto' }}
                           value={assignUserId}
@@ -570,7 +572,7 @@ export default function AdminPage({ defaultTab = 'notify' }) {
                         </select>
                       </div>
                       <div>
-                        <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Galiojimas</label>
+                        <label className="text-xs mb-1 block" style={{ color: 'var(--text-primary)' }}>Galiojimas</label>
                         <label className="flex items-center gap-1 text-xs mb-1" style={{ color: 'var(--text-primary)' }}>
                           <input type="checkbox" checked={assignPermanent} onChange={(e) => setAssignPermanent(e.target.checked)} />
                           Iki ištrynimo

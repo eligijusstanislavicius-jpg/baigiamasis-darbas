@@ -225,6 +225,7 @@ export default function FriendsPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             className="mb-6"
+            style={{ marginTop: '10px' }}
           >
             <p
               className="text-xs font-bold uppercase tracking-wide mb-3"
@@ -238,12 +239,12 @@ export default function FriendsPage() {
                   key={f.id}
                   layout
                   className="glass p-4"
-                  style={{ borderLeft: '3px solid var(--accent-from)' }}
+                  style={{ borderLeft: '3px solid var(--accent-from)', paddingLeft: '5px' }}
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <div>
+                    <div style={{ paddingLeft: '10px' }}>
                       <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
-                        {f.senderFirstName}
+                        {f.senderFirstName} {f.senderLastName}
                       </p>
                       <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                         nori prisijungti kaip: {f.senderRelationshipTypeLabel}
@@ -275,7 +276,8 @@ export default function FriendsPage() {
                       whileHover={{ scale: 1.03 }}
                       whileTap={{ scale: 0.97 }}
                       onClick={() => handleAccept(f.id)}
-                      className="btn-gradient flex items-center gap-1.5 px-4 py-2"
+                      className="btn-gradient flex items-center gap-1.5"
+                      style={{ padding: '5px' }}
                     >
                       <Check size={14} /> Priimti
                     </motion.button>
@@ -288,7 +290,7 @@ export default function FriendsPage() {
       </AnimatePresence>
 
       {/* Draugų sąrašas */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-3" style={{ marginTop: '10px' }}>
         <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
           Draugai ({friends.length})
         </p>

@@ -3,12 +3,12 @@ import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Inbox, Send, Users, Heart, User, Bell,
-  Settings, Mail, LogOut, Shield, BookOpen,
+  Settings, Mail, LogOut, Shield, HelpCircle,
   ChevronRight,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { useNotifications } from '../context/NotificationContext'
 import { getInbox } from '../api/messages'
-import { getAll as getNotifications } from '../api/notifications'
 
 const navLinks = [
   { to: '/inbox',         label: 'Gautos žinutės', Icon: Inbox },
@@ -18,6 +18,7 @@ const navLinks = [
   { to: '/profile',       label: 'Profilis',        Icon: User },
   { to: '/notifications', label: 'Pranešimai',      Icon: Bell },
   { to: '/limits',        label: 'Žinučių limitai', Icon: Settings },
+  { to: '/help',          label: 'Pagalba',          Icon: HelpCircle },
 ]
 
 const mobileLinks = [
@@ -29,9 +30,8 @@ const mobileLinks = [
 ]
 
 const adminLinks = [
-  { to: '/admin',        label: 'Valdymas',        Icon: Shield,   end: true },
-  { to: '/admin/wishes', label: 'Palinkėjimai',    Icon: BookOpen, end: false },
-  { to: '/admin/users',  label: 'Visi vartotojai', Icon: Users,    end: false },
+  { to: '/admin',       label: 'Valdymas',        Icon: Shield, end: true },
+  { to: '/admin/users', label: 'Visi vartotojai', Icon: Users,  end: false },
 ]
 
 function NavItem({ to, label, Icon, badge, expanded, end = false }) {
@@ -78,21 +78,20 @@ function NavItem({ to, label, Icon, badge, expanded, end = false }) {
 
 export default function Sidebar() {
   const { user, logout, isAdmin } = useAuth()
+  const { unreadNotifs } = useNotifications()
   const navigate = useNavigate()
   const [expanded, setExpanded] = useState(false)
   const [unreadMessages, setUnreadMessages] = useState(0)
-  const [unreadNotifs, setUnreadNotifs] = useState(0)
 
   useEffect(() => {
-    const fetchBadges = async () => {
+    const fetchMessages = async () => {
       try {
-        const [msgRes, notifRes] = await Promise.all([getInbox(), getNotifications()])
+        const msgRes = await getInbox()
         setUnreadMessages(msgRes.data.length)
-        setUnreadNotifs(notifRes.data.filter(n => !n.isRead).length)
       } catch {}
     }
-    fetchBadges()
-    const interval = setInterval(fetchBadges, 30000)
+    fetchMessages()
+    const interval = setInterval(fetchMessages, 30000)
     return () => clearInterval(interval)
   }, [])
 

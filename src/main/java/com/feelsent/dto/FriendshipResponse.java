@@ -14,10 +14,12 @@ public class FriendshipResponse {
     private Long id;
     private Long senderId;
     private String senderFirstName;
+    private String senderLastName;
     private MoodStatus senderMoodStatus;
     private String senderMoodStatusLabel;
     private Long receiverId;
     private String receiverFirstName;
+    private String receiverLastName;
     private MoodStatus receiverMoodStatus;
     private String receiverMoodStatusLabel;
     private RelationshipType senderRelationshipType;

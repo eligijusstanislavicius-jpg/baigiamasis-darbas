@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Bell, CheckCheck, ArrowRight } from 'lucide-react'
 import { getAll, markRead, markAllRead } from '../api/notifications'
+import { useNotifications } from '../context/NotificationContext'
 
 const TYPE_ICON = {
   FRIEND_REQUEST:          '👥',
@@ -28,6 +29,7 @@ const item = {
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState([])
   const navigate = useNavigate()
+  const { setUnreadNotifs } = useNotifications()
 
   const load = async () => {
     try {
@@ -42,6 +44,7 @@ export default function NotificationsPage() {
     try {
       await markRead(id)
       setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, isRead: true } : n))
+      setUnreadNotifs((prev) => Math.max(0, prev - 1))
     } catch {}
   }
 
@@ -49,6 +52,7 @@ export default function NotificationsPage() {
     try {
       await markAllRead()
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
+      setUnreadNotifs(0)
     } catch {}
   }
 
