@@ -10,7 +10,7 @@ import { getMyUnique } from '../api/uniqueWishes'
 
 const SEND_MODES = [
   { value: 'SIMPLE', label: 'Paprastas',  desc: 'Gavėjas iš karto mato tekstą', emoji: '📨' },
-  { value: 'GUESS',  label: 'Gavėjas turi atspėti', desc: 'Gavėjas nemato palinkėjimo, turi atspėti palinkėjimo toną', emoji: '🎭' },
+  { value: 'GUESS',  label: 'Gavėjas turi atspėti', desc: 'Gavėjas nemato palinkėjimo, turi atspėti palinkėjimo stilių', emoji: '🎭' },
 ]
 
 const fadeUp = {
@@ -28,7 +28,7 @@ export default function SendPage() {
   const [uniqueFavorites, setUniqueFavorites] = useState([])
   const [showFavorites, setShowFavorites] = useState(false)
   const [selectedWish, setSelectedWish] = useState(null)
-  const [sendMode, setSendMode] = useState('SIMPLE')
+  const [sendMode, setSendMode] = useState(null)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
@@ -46,9 +46,9 @@ export default function SendPage() {
   }
 
   const getLimitColor = () => {
-    if (!limitInfo?.limited) return 'var(--text-muted)'
+    if (!limitInfo?.limited) return 'var(--text-primary)'
     if (limitInfo.remaining === 0) return '#be185d'
-    return 'var(--text-muted)'
+    return 'var(--text-primary)'
   }
 
   const getMe = () => JSON.parse(localStorage.getItem('user'))
@@ -123,7 +123,7 @@ export default function SendPage() {
     setError('')
     try {
       const friendId = getFriendId(selectedFriend)
-      const payload = { receiverId: friendId, sendMode }
+      const payload = { receiverId: friendId, sendMode: sendMode || 'SIMPLE' }
       if (selectedWish.isUnique) {
         payload.uniqueWishId = selectedWish.id
       } else {
@@ -134,7 +134,7 @@ export default function SendPage() {
       setStep(1)
       setSelectedFriend(null)
       setSelectedWish(null)
-      setSendMode('SIMPLE')
+      setSendMode(null)
     } catch (err) {
       setError(err.response?.data?.message || 'Nepavyko išsiųsti')
     } finally {
@@ -156,7 +156,8 @@ export default function SendPage() {
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.97 }}
           onClick={() => setSuccess(false)}
-          className="btn-gradient px-8 py-2.5"
+          className="btn-gradient py-2.5"
+          style={{ paddingLeft: '5px', paddingRight: '5px' }}
         >
           Siųsti dar
         </motion.button>
@@ -257,9 +258,9 @@ export default function SendPage() {
               <button
                 onClick={() => setStep(1)}
                 className="flex items-center gap-1 text-sm transition-colors"
-                style={{ color: 'var(--text-muted)' }}
+                style={{ color: 'var(--text-primary)' }}
                 onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-from)'}
-                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-primary)'}
               >
                 <ChevronLeft size={16} /> Atgal
               </button>
@@ -398,9 +399,9 @@ export default function SendPage() {
               <button
                 onClick={() => setStep(2)}
                 className="flex items-center gap-1 text-sm transition-colors"
-                style={{ color: 'var(--text-muted)' }}
+                style={{ color: 'var(--text-primary)' }}
                 onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-from)'}
-                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-primary)'}
               >
                 <ChevronLeft size={16} /> Atgal
               </button>
@@ -418,13 +419,17 @@ export default function SendPage() {
 
             {/* Pasirinktas palinkėjimas */}
             <div
-              className="glass-sm py-4 mb-5"
-              style={{ background: 'rgba(190,24,93,0.06)', paddingLeft: '25px', paddingRight: '20px' }}
+              className="glass-sm py-4"
+              style={{ background: 'rgba(190,24,93,0.06)', paddingLeft: '25px', paddingRight: '20px', marginBottom: '10px' }}
             >
               <p className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>{selectedWish.text}</p>
             </div>
 
-            <div className="flex flex-col gap-3 mb-5">
+            <p className="text-sm font-medium mb-3" style={{ color: 'var(--text-primary)' }}>
+              Žinutę gali išsiųsti šiais būdais:
+            </p>
+
+            <div className="flex flex-col gap-3" style={{ marginBottom: '10px' }}>
               {SEND_MODES.map((m) => (
                 <motion.button
                   key={m.value}
@@ -444,7 +449,7 @@ export default function SendPage() {
                   <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
                     {m.emoji} {m.label}
                   </p>
-                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{m.desc}</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-primary)' }}>{m.desc}</p>
                 </motion.button>
               ))}
             </div>

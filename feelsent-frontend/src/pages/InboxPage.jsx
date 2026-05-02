@@ -30,6 +30,8 @@ export default function InboxPage() {
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [envelopeState, setEnvelopeState] = useState({})
+  // { [messageId]: 'closed' | 'picking' | 'opening' }
 
   const load = async () => {
     try {
@@ -54,12 +56,21 @@ export default function InboxPage() {
   }
 
   const handleGuess = async (id, tone) => {
+    setEnvelopeState(s => ({ ...s, [id]: 'opening' }))
+    let responseData = null
     try {
       const res = await guess(id, tone)
-      setMessages((prev) => prev.map((m) => (m.id === id ? res.data : m)))
+      responseData = res.data
     } catch (err) {
       alert(err.response?.data?.message || 'Klaida')
+      setEnvelopeState(s => ({ ...s, [id]: 'picking' }))
+      return
     }
+    setTimeout(() => {
+      if (responseData) {
+        setMessages(prev => prev.map(m => m.id === id ? responseData : m))
+      }
+    }, 950)
   }
 
   const handleReact = async (id, reaction) => {
@@ -175,7 +186,8 @@ export default function InboxPage() {
                     whileHover={{ y: -1 }}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => handleOpen(m.id)}
-                    className="btn-gradient px-8 py-2.5"
+                    className="btn-gradient py-2.5"
+                    style={{ paddingLeft: '5px', paddingRight: '5px' }}
                   >
                     Atidaryti
                   </motion.button>
@@ -184,44 +196,12 @@ export default function InboxPage() {
 
               {/* OPENED — GUESS režimas */}
               {m.status === 'OPENED' && m.sendMode === 'GUESS' && (
-                <div>
-                  {m.imageUrl && (
-                    <div className="flex justify-center mb-4">
-                      <img
-                        src={m.imageUrl}
-                        alt="palinkėjimas"
-                        className="w-48 h-48 object-cover rounded-xl"
-                        style={{ border: '1px solid var(--glass-border)' }}
-                        onError={(e) => { e.target.style.display = 'none' }}
-                      />
-                    </div>
-                  )}
-                  <p className="text-center text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
-                    Atspėk žinutės toną:
-                  </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {TONES.map((t) => (
-                      <motion.button
-                        key={t}
-                        whileHover={{ y: -1 }}
-                        whileTap={{ scale: 0.97 }}
-                        onClick={() => handleGuess(m.id, t)}
-                        className="glass-sm py-2.5 text-sm font-medium transition-all"
-                        style={{ color: 'var(--text-primary)' }}
-                        onMouseEnter={e => {
-                          e.currentTarget.style.background = 'linear-gradient(135deg, rgba(190,24,93,0.12), rgba(124,58,237,0.12))'
-                          e.currentTarget.style.color = 'var(--accent-from)'
-                        }}
-                        onMouseLeave={e => {
-                          e.currentTarget.style.background = ''
-                          e.currentTarget.style.color = 'var(--text-primary)'
-                        }}
-                      >
-                        {TONE_LABELS[t]}
-                      </motion.button>
-                    ))}
-                  </div>
-                </div>
+                <EnvelopeGuess
+                  m={m}
+                  state={envelopeState[m.id] || 'closed'}
+                  onClickEnvelope={() => setEnvelopeState(s => ({ ...s, [m.id]: 'picking' }))}
+                  onGuess={(tone) => handleGuess(m.id, tone)}
+                />
               )}
 
               {/* OPENED — SIMPLE arba PASSIVE */}
@@ -260,6 +240,162 @@ export default function InboxPage() {
   )
 }
 
+function EnvelopeGuess({ m, state, onClickEnvelope, onGuess }) {
+  const isClosed   = state === 'closed'
+  const isPicking  = state === 'picking'
+  const isOpening  = state === 'opening'
+
+  return (
+    <div className="flex flex-col items-center gap-4 py-2">
+
+      {/* Vokas */}
+      <motion.div
+        className="relative w-full max-w-xs select-none"
+        style={{ perspective: '1000px' }}
+        onClick={isClosed ? onClickEnvelope : undefined}
+        whileHover={isClosed ? { scale: 1.02 } : {}}
+        whileTap={isClosed ? { scale: 0.98 } : {}}
+      >
+        <div
+          className="rounded-2xl h-44 relative"
+          style={{
+            background: 'rgba(255,255,255,0.72)',
+            border: '1px solid rgba(255,255,255,0.90)',
+            boxShadow: '0 8px 32px rgba(190,24,93,0.10)',
+            cursor: isClosed ? 'pointer' : 'default',
+            overflow: 'visible',
+          }}
+        >
+          {/* Dekoratyvinė apatinė dalis */}
+          <div style={{
+            position: 'absolute', bottom: 0, left: 0, right: 0, height: '55%',
+            borderRadius: '0 0 20px 20px',
+            background: 'rgba(190,24,93,0.04)',
+          }} />
+
+          {/* Flapas — trikampis viršuje */}
+          <motion.div
+            style={{
+              position: 'absolute', top: 0, left: 0, right: 0, height: '55%',
+              background: 'linear-gradient(160deg, rgba(190,24,93,0.20), rgba(124,58,237,0.20))',
+              clipPath: 'polygon(0 0, 100% 0, 50% 100%)',
+              transformOrigin: 'top center',
+              zIndex: 3,
+              borderRadius: '20px 20px 0 0',
+            }}
+            animate={isOpening ? { rotateX: -180, opacity: 0 } : { rotateX: 0, opacity: 1 }}
+            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+          />
+
+          {/* Voko vidurys — emoji + tekstas */}
+          <AnimatePresence>
+            {!isOpening && (
+              <motion.div
+                key="inner"
+                initial={{ opacity: 1 }}
+                exit={{ opacity: 0, transition: { duration: 0.2 } }}
+                className="absolute inset-0 flex flex-col items-center justify-center gap-1.5"
+                style={{ zIndex: 2, paddingTop: '12px' }}
+              >
+                <motion.span
+                  className="text-4xl"
+                  animate={isClosed ? { rotate: [0, -6, 6, 0] } : {}}
+                  transition={{ repeat: Infinity, repeatDelay: 2.5, duration: 0.5 }}
+                >
+                  ✉️
+                </motion.span>
+                <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  Turi žinutę!
+                </p>
+                {isClosed && (
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    Paspausk kad atspėtum
+                  </p>
+                )}
+                {isPicking && (
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-xs font-medium"
+                    style={{ color: 'var(--accent-from)' }}
+                  >
+                    Pasirink stilių žemiau ↓
+                  </motion.p>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Atvirute — islenda kai vokas atsidaro */}
+          <AnimatePresence>
+            {isOpening && (
+              <motion.div
+                key="card"
+                style={{
+                  position: 'absolute',
+                  bottom: 8, left: 12, right: 12,
+                  zIndex: 4,
+                  background: 'white',
+                  borderRadius: '14px',
+                  padding: '16px',
+                  boxShadow: '0 4px 20px rgba(190,24,93,0.18)',
+                  border: '1px solid rgba(190,24,93,0.15)',
+                }}
+                initial={{ y: 50, opacity: 0 }}
+                animate={{ y: -36, opacity: 1 }}
+                transition={{ delay: 0.3, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <p className="text-sm font-medium text-center leading-relaxed" style={{ color: '#1a1a1a' }}>
+                  {m.wishText}
+                </p>
+                <p className="text-xs mt-1.5 text-center" style={{ color: 'rgba(0,0,0,0.4)' }}>
+                  {m.wishToneLabel}
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.div>
+
+      {/* Stiliaus spėjimo mygtukai */}
+      {isPicking && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="w-full"
+        >
+          <p className="text-xs mb-2.5 text-center font-medium" style={{ color: 'var(--text-primary)' }}>
+            Atspėk palinkėjimo stilių:
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {TONES.map((t) => (
+              <motion.button
+                key={t}
+                whileHover={{ y: -1 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => onGuess(t)}
+                className="glass-sm py-2.5 text-sm font-medium transition-all"
+                style={{ color: 'var(--text-primary)' }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(190,24,93,0.12), rgba(124,58,237,0.12))'
+                  e.currentTarget.style.color = 'var(--accent-from)'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = ''
+                  e.currentTarget.style.color = 'var(--text-primary)'
+                }}
+              >
+                {TONE_LABELS[t]}
+              </motion.button>
+            ))}
+          </div>
+        </motion.div>
+      )}
+    </div>
+  )
+}
+
 function WishContent({ m, onReact }) {
   return (
     <div className="w-full">
@@ -271,7 +407,7 @@ function WishContent({ m, onReact }) {
           {m.wishText}
         </p>
         <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
-          Tonas: {m.wishToneLabel}
+          Stilius: {m.wishToneLabel}
         </p>
       </div>
       <p className="text-sm font-semibold mb-2 text-center" style={{ color: 'var(--text-primary)' }}>

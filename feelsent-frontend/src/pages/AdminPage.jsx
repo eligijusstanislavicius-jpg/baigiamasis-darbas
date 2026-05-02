@@ -12,6 +12,7 @@ const TONE_OPTIONS = [
 ]
 
 const RELATIONSHIP_OPTIONS = [
+  { value: 'ALL',         label: 'Visi' },
   { value: 'FRIEND',      label: 'Draugas' },
   { value: 'PARTNER',     label: 'Partneris' },
   { value: 'HUSBAND',     label: 'Vyras' },
