@@ -126,7 +126,7 @@ public class FriendshipService {
         return result;
     }
 
-    // Ištrina draugystę – keičia statusą į REMOVED (abu gali inicijuoti)
+    // Ištrina draugystę – keičia statusą į REMOVED arba atšaukia PENDING užklausą
     @Transactional
     public void removeFriend(String userEmail, Long friendshipId) {
         Friendship friendship = friendshipRepository.findById(friendshipId)
@@ -137,6 +137,11 @@ public class FriendshipService {
 
         if (!isSender && !isReceiver) {
             throw new IllegalArgumentException("Neturite teisės šalinti šios draugystės");
+        }
+
+        if (friendship.getStatus() == FriendshipStatus.PENDING && isSender) {
+            friendshipRepository.delete(friendship);
+            return;
         }
 
         if (friendship.getStatus() != FriendshipStatus.ACCEPTED) {
