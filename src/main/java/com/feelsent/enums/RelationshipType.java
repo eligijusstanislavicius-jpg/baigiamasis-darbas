@@ -18,6 +18,8 @@ public enum RelationshipType {
     SISTER("Sesuo"),
     GRANDFATHER("Senelis"),
     GRANDMOTHER("Močiutė"),
+    SON_IN_LAW("Zentas"),
+    DAUGHTER_IN_LAW("Marti"),
     ALL("Visiems");
 
     private final String label;

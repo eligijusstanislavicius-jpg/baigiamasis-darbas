@@ -158,11 +158,16 @@ public class WishService {
 
     // Randa ryšio tipą tarp siuntėjo ir gavėjo pagal draugystės įrašą
     private String getRelationshipType(User sender, User receiver) {
-        return friendshipRepository.findFirstBySenderAndReceiverAndStatus(sender, receiver, FriendshipStatus.ACCEPTED)
+        String relType = friendshipRepository.findFirstBySenderAndReceiverAndStatus(sender, receiver, FriendshipStatus.ACCEPTED)
                 .map(f -> f.getSenderRelationshipType().name())
                 .orElseGet(() -> friendshipRepository.findFirstBySenderAndReceiverAndStatus(receiver, sender, FriendshipStatus.ACCEPTED)
                         .map(f -> f.getSenderRelationshipType().name())
                         .orElseThrow(() -> new IllegalArgumentException("Vartotojai nėra draugai")));
+        return switch (relType) {
+            case "DAUGHTER_IN_LAW" -> "DAUGHTER";
+            case "SON_IN_LAW"      -> "SON";
+            default                -> relType;
+        };
     }
 
     // Surinka visų jau siųstų palinkėjimų ID tarp šios poros (abiem kryptimis)
