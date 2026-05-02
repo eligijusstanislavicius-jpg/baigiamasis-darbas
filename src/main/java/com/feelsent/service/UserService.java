@@ -50,14 +50,15 @@ public class UserService {
     // Registruoja naują vartotoją ir išsiunčia patvirtinimo laišką
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
+        String email = request.getEmail().toLowerCase();
+        if (userRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("El. paštas jau užregistruotas");
         }
 
         User user = new User();
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
-        user.setEmail(request.getEmail());
+        user.setEmail(email);
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setRole(Role.USER);
         user.setPoints(0);
@@ -91,11 +92,12 @@ public class UserService {
     public AuthResponse login(LoginRequest request) {
         // authenticationManager pats patikrina email + slaptažodį per CustomUserDetailsService
         // jei neteisingi – automatiškai išmetama klaida
+        String email = request.getEmail().toLowerCase();
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+                new UsernamePasswordAuthenticationToken(email, request.getPassword())
         );
 
-        User user = userRepository.findByEmail(request.getEmail())
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("Vartotojas nerastas"));
 
         if (!user.isEmailVerified()) {
