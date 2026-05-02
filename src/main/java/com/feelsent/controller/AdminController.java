@@ -9,7 +9,13 @@ import com.feelsent.enums.WishTone;
 import com.feelsent.exception.UserNotFoundException;
 import com.feelsent.model.User;
 import com.feelsent.model.Wish;
+import com.feelsent.repository.FavoriteWishRepository;
+import com.feelsent.repository.FriendshipRepository;
+import com.feelsent.repository.MessageLimitRepository;
+import com.feelsent.repository.MessageRepository;
+import com.feelsent.repository.NotificationRepository;
 import com.feelsent.repository.UserRepository;
+import com.feelsent.repository.UserUniqueWishRepository;
 import com.feelsent.repository.WishRepository;
 import com.feelsent.service.NotificationService;
 import com.feelsent.service.UniqueWishService;
@@ -36,6 +42,12 @@ public class AdminController {
     private final WishService wishService;
     private final NotificationService notificationService;
     private final UniqueWishService uniqueWishService;
+    private final FriendshipRepository friendshipRepository;
+    private final MessageRepository messageRepository;
+    private final MessageLimitRepository messageLimitRepository;
+    private final FavoriteWishRepository favoriteWishRepository;
+    private final NotificationRepository notificationRepository;
+    private final UserUniqueWishRepository userUniqueWishRepository;
 
     // GET /api/admin/users – visų vartotojų sąrašas
     @GetMapping("/users")
@@ -58,8 +70,9 @@ public class AdminController {
         return ResponseEntity.ok(users);
     }
 
-    // DELETE /api/admin/users/{id} – šalina vartotoją pagal ID
+    // DELETE /api/admin/users/{id} – šalina vartotoją ir visus susijusius įrašus
     @DeleteMapping("/users/{id}")
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("Vartotojas nerastas"));
@@ -68,6 +81,12 @@ public class AdminController {
             throw new IllegalArgumentException("Negalima šalinti administratoriaus");
         }
 
+        notificationRepository.deleteAllByUser(user);
+        favoriteWishRepository.deleteAllByUser(user);
+        messageLimitRepository.deleteAllByUser(user);
+        messageRepository.deleteAllByUser(user);
+        friendshipRepository.deleteAllByUser(user);
+        userUniqueWishRepository.deleteAllByUser(user);
         userRepository.delete(user);
         return ResponseEntity.noContent().build();
     }

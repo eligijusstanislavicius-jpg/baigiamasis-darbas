@@ -28,6 +28,10 @@ public interface FriendshipRepository extends JpaRepository<Friendship, Long> {
     @Query("SELECT COUNT(f) > 0 FROM Friendship f WHERE f.sender = :sender AND f.receiver = :receiver AND f.status IN ('PENDING', 'ACCEPTED')")
     boolean existsActiveRelationship(@Param("sender") User sender, @Param("receiver") User receiver);
 
+    // Ieško esamo įrašo nepriklausomai nuo statuso – pakartotiniam siuntimui po DECLINED/REMOVED
+    @Query("SELECT f FROM Friendship f WHERE f.sender = :sender AND f.receiver = :receiver")
+    Optional<Friendship> findBySenderAndReceiver(@Param("sender") User sender, @Param("receiver") User receiver);
+
     @Modifying
     @Query("DELETE FROM Friendship f WHERE f.sender = :user OR f.receiver = :user")
     void deleteAllByUser(@Param("user") User user);

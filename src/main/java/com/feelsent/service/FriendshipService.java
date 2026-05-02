@@ -53,10 +53,13 @@ public class FriendshipService {
             throw new IllegalArgumentException("Draugystės užklausa jau egzistuoja arba esate draugai");
         }
 
-        Friendship friendship = new Friendship();
+        // Jei yra senas DECLINED/REMOVED įrašas – atnaujiname, nekuriame naujo (unique constraint)
+        Friendship friendship = friendshipRepository.findBySenderAndReceiver(sender, receiver)
+                .orElse(new Friendship());
         friendship.setSender(sender);
         friendship.setReceiver(receiver);
         friendship.setSenderRelationshipType(relationshipType);
+        friendship.setReceiverRelationshipType(null);
         friendship.setStatus(FriendshipStatus.PENDING);
         friendship.setCreatedAt(LocalDateTime.now());
 
