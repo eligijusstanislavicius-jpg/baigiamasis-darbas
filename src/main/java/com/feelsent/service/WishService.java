@@ -166,6 +166,8 @@ public class WishService {
         return switch (relType) {
             case "DAUGHTER_IN_LAW" -> "DAUGHTER";
             case "SON_IN_LAW"      -> "SON";
+            case "FATHER_IN_LAW"   -> "FATHER";
+            case "MOTHER_IN_LAW"   -> "MOTHER";
             default                -> relType;
         };
     }
