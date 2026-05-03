@@ -17,7 +17,7 @@ export default function NewUserWelcomeModal({ onClose }) {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 z-50 flex items-center justify-center p-4"
-        style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+        style={{ background: 'rgba(0,0,0,0.45)' }}
         onClick={onClose}
       >
         <motion.div
@@ -26,7 +26,7 @@ export default function NewUserWelcomeModal({ onClose }) {
           exit={{ scale: 0.88, y: 24, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 320, damping: 28 }}
           className="relative rounded-2xl p-6 max-w-sm w-full"
-          style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}
+          style={{ background: '#ffffff', border: '1px solid rgba(190,24,93,0.15)', boxShadow: '0 8px 32px rgba(190,24,93,0.12)' }}
           onClick={e => e.stopPropagation()}
         >
           <button
@@ -49,7 +49,7 @@ export default function NewUserWelcomeModal({ onClose }) {
               <h2 className="text-lg font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
                 Sveiki atvykę i FeelSent!
               </h2>
-              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+              <p className="text-sm font-medium leading-relaxed" style={{ color: 'var(--text-primary)' }}>
                 Atrodo, kad dar neturite draugų sąraše. Susipažinkite su programa —
                 pagalbos puslapyje rasite viską, ko reikia sėkmingai pradžiai.
               </p>

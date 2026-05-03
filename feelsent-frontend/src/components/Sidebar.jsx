@@ -80,7 +80,7 @@ export default function Sidebar({ noFriends = false }) {
   const { user, logout, isAdmin } = useAuth()
   const { unreadNotifs } = useNotifications()
   const navigate = useNavigate()
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(true)
   const [unreadMessages, setUnreadMessages] = useState(0)
 
   useEffect(() => {
