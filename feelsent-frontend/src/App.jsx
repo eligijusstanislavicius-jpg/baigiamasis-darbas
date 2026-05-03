@@ -1,8 +1,11 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { NotificationProvider } from './context/NotificationContext'
 import Sidebar from './components/Sidebar'
 import MoodPromptModal from './components/MoodPromptModal'
+import NewUserWelcomeModal from './components/NewUserWelcomeModal'
+import { getAll } from './api/friendships'
 
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
@@ -21,11 +24,35 @@ import HelpPage from './pages/HelpPage'
 /* Sidebar mount'inamas VIENĄ kartą čia — state išlieka naviguojant */
 function AuthenticatedLayout() {
   const { isAdmin } = useAuth()
+  const [noFriends, setNoFriends] = useState(false)
+  const [showWelcome, setShowWelcome] = useState(false)
+
+  useEffect(() => {
+    const checkFriends = async () => {
+      try {
+        const res = await getAll()
+        if (res.data.length === 0) {
+          setNoFriends(true)
+          if (!sessionStorage.getItem('welcomeDismissed')) {
+            setTimeout(() => setShowWelcome(true), 400)
+          }
+        }
+      } catch {}
+    }
+    checkFriends()
+  }, [])
+
+  const dismissWelcome = () => {
+    sessionStorage.setItem('welcomeDismissed', '1')
+    setShowWelcome(false)
+  }
+
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
+      <Sidebar noFriends={noFriends} />
       <main className="flex-1 overflow-y-auto pb-16 md:pb-0" style={{ paddingLeft: '0' }}>
         <MoodPromptModal />
+        {showWelcome && <NewUserWelcomeModal onClose={dismissWelcome} />}
         <Routes>
           <Route path="/inbox"         element={<InboxPage />} />
           <Route path="/send"          element={<SendPage />} />

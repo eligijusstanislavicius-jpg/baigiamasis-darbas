@@ -34,7 +34,7 @@ const adminLinks = [
   { to: '/admin/users', label: 'Visi vartotojai', Icon: Users,  end: false },
 ]
 
-function NavItem({ to, label, Icon, badge, expanded, end = false }) {
+function NavItem({ to, label, Icon, badge, expanded, end = false, blink = false }) {
   return (
     <NavLink
       to={to}
@@ -52,7 +52,7 @@ function NavItem({ to, label, Icon, badge, expanded, end = false }) {
             <Icon
               size={20}
               strokeWidth={isActive ? 2.2 : 1.8}
-              className={badge > 0 && !isActive ? 'icon-pulse' : ''}
+              className={isActive ? '' : blink ? 'help-blink' : badge > 0 ? 'icon-pulse' : ''}
               style={{ color: isActive ? 'var(--accent-from)' : 'var(--text-muted)' }}
             />
           </div>
@@ -76,7 +76,7 @@ function NavItem({ to, label, Icon, badge, expanded, end = false }) {
   )
 }
 
-export default function Sidebar() {
+export default function Sidebar({ noFriends = false }) {
   const { user, logout, isAdmin } = useAuth()
   const { unreadNotifs } = useNotifications()
   const navigate = useNavigate()
@@ -172,6 +172,7 @@ export default function Sidebar() {
               Icon={Icon}
               badge={getBadge(to)}
               expanded={expanded}
+              blink={to === '/help' && noFriends}
             />
           ))}
 

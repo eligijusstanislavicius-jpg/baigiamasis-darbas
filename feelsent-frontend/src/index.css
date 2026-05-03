@@ -132,6 +132,16 @@ body {
   color: #be185d !important;
 }
 
+@keyframes help-blink {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(239, 68, 68, 1)); opacity: 1; }
+  50%       { filter: drop-shadow(0 0 0px rgba(239, 68, 68, 0)); opacity: 0.5; }
+}
+
+.help-blink {
+  animation: help-blink 1.1s ease-in-out infinite;
+  color: #ef4444 !important;
+}
+
 /* ── Scrollbar ───────────────────────────── */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
