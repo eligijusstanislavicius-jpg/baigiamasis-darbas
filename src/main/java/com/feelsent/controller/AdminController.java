@@ -58,6 +58,7 @@ public class AdminController {
                         u.getId(),
                         u.getFirstName(),
                         u.getLastName(),
+                        u.getEmail(),
                         u.getMoodStatus(),
                         u.getMoodStatus() != null ? u.getMoodStatus().getLabel() : null,
                         u.getMoodWant(),

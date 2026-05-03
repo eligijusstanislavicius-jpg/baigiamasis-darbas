@@ -10,7 +10,7 @@ const sections = [
   {
     Icon: Send,
     title: 'Siųsti',
-    text: 'Pasirink draugą — programa pasiūlys žinutę pagal jūsų santykį ir draugo nuotaiką. Jei pasiūlyta žinutė nepatinka, spausk „Kita" ir programa pasiūlys kitą. Pasirinkęs žinutę nusprendžia kaip ją siųsti: iš karto (gavėjas matys tekstą) arba atspėjimo režimu (gavėjas turės atspėti stilių iš 4 variantų — abu gauna taškų už teisingą atsakymą).',
+    text: 'Pasirink draugą — programa pasiūlys žinutę pagal jūsų santykį ir draugo nuotaiką. Jei pasiūlyta žinutė nepatinka, spausk „Kita" ir programa pasiūlys kitą. Prie kiekvienos siūlomos žinutės dešinėje matosi širdutė — ją nuspaudus žinutė išsaugoma tavo mėgstamiausių sąraše. Pasirinkęs žinutę nusprendžia kaip ją siųsti: iš karto (gavėjas matys tekstą) arba atspėjimo režimu (gavėjas turės atspėti stilių iš 4 variantų — abu gauna taškų už teisingą atsakymą).',
   },
   {
     Icon: Inbox,
@@ -40,7 +40,7 @@ const sections = [
   {
     Icon: Mail,
     title: 'Susisiekti su Admin',
-    text: 'Čia gali kreiptis į administratorių dviem atvejais. Pirma — unikalus palinkėjimas: turi asmeninę žinutę kurią norėtum siųsti draugams? Parašyk administratoriui — jis sukurs ir priskirs tą žinutę tik tau, niekas kitas jos negaus. Antra — įkelti į bendrą sąrašą: turi gerą palinkėjimą kurį norėtum pasidalinti su visais? Nurodyk tekstą, stilių (juokingas / palaikantis / romantiškas / gimtadienis) ir kam tinka — adminas įkels į bendrą duomenų bazę ir tą žinutę galės gauti visi vartotojai.',
+    text: 'Turi asmeninę žinutę kurią norėtum siųsti draugams? Parašyk administratoriui — jis sukurs ir priskirs tą žinutę tik tau, niekas kitas jos negaus. Arba — jei turi gerą palinkėjimą kurį norėtum pasidalinti su visais, pateik tekstą ir adminas įkels į bendrą duomenų bazę.',
   },
 ]
 

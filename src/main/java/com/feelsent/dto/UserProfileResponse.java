@@ -14,6 +14,7 @@ public class UserProfileResponse {
     private Long id;
     private String firstName;
     private String lastName;
+    private String email;
     private MoodStatus moodStatus;
     private String moodStatusLabel;
     private MoodWant moodWant;

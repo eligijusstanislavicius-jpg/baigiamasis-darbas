@@ -120,6 +120,7 @@ public class UserService {
                 user.getId(),
                 user.getFirstName(),
                 user.getLastName(),
+                user.getEmail(),
                 user.getMoodStatus(),
                 user.getMoodStatus() != null ? user.getMoodStatus().getLabel() : null,
                 user.getMoodWant(),

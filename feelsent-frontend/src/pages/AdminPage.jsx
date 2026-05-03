@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Shield, BookOpen, Sparkles, Send } from 'lucide-react'
+import { Shield, BookOpen, Sparkles, Send, Users, Trash2 } from 'lucide-react'
 import { getUsers, deleteUser, getWishes, addWish, deactivateWish, notifyAll } from '../api/admin'
 import { getAllUnique, createUnique, updateUnique, assignUnique } from '../api/uniqueWishes'
 
@@ -60,6 +60,7 @@ const TABS = [
   { key: 'notify',  label: 'Pranešimas visiems', Icon: Send },
   { key: 'wishes',  label: 'Palinkėjimai',        Icon: BookOpen },
   { key: 'unique',  label: 'Unikalūs',            Icon: Sparkles },
+  { key: 'users',   label: 'Vartotojai',          Icon: Users },
 ]
 
 function Pagination({ page, totalPages, onChange }) {
@@ -640,6 +641,56 @@ export default function AdminPage({ defaultTab = 'notify' }) {
               ))}
             </div>
             <Pagination page={uniquePage} totalPages={uniqueTotalPages} onChange={(p) => { setUniquePage(p); loadUniqueWishes(p) }} />
+          </motion.div>
+        )}
+        {/* Vartotojai */}
+        {tab === 'users' && (
+          <motion.div
+            key="users"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+          >
+            <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
+              Viso vartotojų: {users.filter(u => u.role === 'USER').length}
+            </p>
+            <div className="flex flex-col gap-2">
+              {users.filter(u => u.role === 'USER').map((u) => (
+                <div
+                  key={u.id}
+                  className="glass py-3 flex items-center justify-between"
+                  style={{ paddingLeft: '20px', paddingRight: '20px' }}
+                >
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
+                      style={{ background: 'linear-gradient(135deg, var(--accent-from), var(--accent-to))' }}
+                    >
+                      {u.firstName?.[0]?.toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
+                        {u.firstName} {u.lastName}
+                      </p>
+                      <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{u.email}</p>
+                    </div>
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    onClick={() => handleDeleteUser(u.id)}
+                    className="p-1.5 rounded-lg transition-colors shrink-0"
+                    style={{ color: 'var(--text-muted)' }}
+                    onMouseEnter={e => e.currentTarget.style.color = '#be185d'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+                  >
+                    <Trash2 size={15} />
+                  </motion.button>
+                </div>
+              ))}
+              {users.filter(u => u.role === 'USER').length === 0 && (
+                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Nėra vartotojų.</p>
+              )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

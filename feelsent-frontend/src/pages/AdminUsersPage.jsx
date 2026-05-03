@@ -88,7 +88,7 @@ export default function AdminUsersPage() {
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
+                    <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
                       {u.firstName} {u.lastName}
                     </p>
                     {u.role === 'ADMIN' && (
@@ -103,7 +103,10 @@ export default function AdminUsersPage() {
                       </span>
                     )}
                   </div>
-                  <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                    {u.email}
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
                     {lastSeenLabel(u.lastLoginAt)} · {u.points} taškų
                   </p>
                 </div>
