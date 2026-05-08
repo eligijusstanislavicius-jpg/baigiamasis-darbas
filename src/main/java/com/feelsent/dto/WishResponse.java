@@ -13,4 +13,5 @@ public class WishResponse {
     private String toneLabel;
     private String relationshipType;
     private String imageUrl;
+    private Boolean active;
 }

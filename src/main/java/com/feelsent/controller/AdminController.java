@@ -92,12 +92,15 @@ public class AdminController {
         return ResponseEntity.noContent().build();
     }
 
-    // GET /api/admin/wishes – aktyvūs palinkėjimai su paginacija
+    // GET /api/admin/wishes – palinkėjimai su paginacija ir filtrais
     @GetMapping("/wishes")
     public ResponseEntity<Page<WishResponse>> getAllWishes(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "8") int size) {
-        return ResponseEntity.ok(wishService.getActivePaged(page, size));
+            @RequestParam(defaultValue = "8") int size,
+            @RequestParam(required = false) Boolean active,
+            @RequestParam(required = false) WishTone tone,
+            @RequestParam(required = false) String relType) {
+        return ResponseEntity.ok(wishService.getAllPaged(page, size, active, tone, relType));
     }
 
     // POST /api/admin/wishes – įterpia naują palinkėjimą į DB
@@ -137,7 +140,8 @@ public class AdminController {
                 saved.getTone(),
                 saved.getTone().getLabel(),
                 saved.getRelationshipType(),
-                "/static/images/wishes/" + saved.getId() + ".png"
+                "/static/images/wishes/" + saved.getId() + ".png",
+                saved.getActive()
         ));
     }
 
@@ -151,6 +155,20 @@ public class AdminController {
         Wish wish = wishRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Palinkėjimas nerastas"));
         wish.setActive(false);
+        wishRepository.save(wish);
+        return ResponseEntity.noContent().build();
+    }
+
+    // PATCH /api/admin/wishes/{id}/activate – aktyvuoja deaktyvuotą palinkėjimą
+    @Caching(evict = {
+        @CacheEvict(value = "active-wishes", allEntries = true),
+        @CacheEvict(value = "wishes-by-tone", allEntries = true)
+    })
+    @PatchMapping("/wishes/{id}/activate")
+    public ResponseEntity<Void> activateWish(@PathVariable Long id) {
+        Wish wish = wishRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Palinkėjimas nerastas"));
+        wish.setActive(true);
         wishRepository.save(wish);
         return ResponseEntity.noContent().build();
     }

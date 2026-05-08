@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Shield, BookOpen, Sparkles, Send, Users, Trash2 } from 'lucide-react'
-import { getUsers, deleteUser, getWishes, addWish, deactivateWish, notifyAll } from '../api/admin'
+import { getUsers, deleteUser, getWishes, addWish, deactivateWish, activateWish, notifyAll } from '../api/admin'
 import { getAllUnique, createUnique, updateUnique, assignUnique } from '../api/uniqueWishes'
 
 const TONE_OPTIONS = [
@@ -128,6 +128,9 @@ export default function AdminPage({ defaultTab = 'notify' }) {
   const [tab, setTab] = useState(defaultTab)
   const [newWish, setNewWish] = useState({ text: '', tone: 'SUPPORTIVE', relationshipType: 'FRIEND' })
   const [wishErr, setWishErr] = useState('')
+  const [wishActiveFilter, setWishActiveFilter] = useState(null)
+  const [wishToneFilter, setWishToneFilter] = useState('')
+  const [wishRelFilter, setWishRelFilter] = useState('')
   const [notifyAllText, setNotifyAllText] = useState('')
 
   const [newUniqueText, setNewUniqueText] = useState('')
@@ -142,8 +145,8 @@ export default function AdminPage({ defaultTab = 'notify' }) {
   const [assignExpiry, setAssignExpiry] = useState('')
   const [assignPermanent, setAssignPermanent] = useState(false)
 
-  const loadWishes = async (p = wishPage) => {
-    const res = await getWishes(p)
+  const loadWishes = async (p = wishPage, activeF = wishActiveFilter, toneF = wishToneFilter, relF = wishRelFilter) => {
+    const res = await getWishes(p, 8, activeF, toneF || null, relF || null)
     setWishes(res.data.content)
     setWishTotalPages(res.data.totalPages)
   }
@@ -199,6 +202,16 @@ export default function AdminPage({ defaultTab = 'notify' }) {
   const handleDeactivate = async (id) => {
     await deactivateWish(id)
     loadWishes(wishPage)
+  }
+
+  const handleActivate = async (id) => {
+    await activateWish(id)
+    loadWishes(wishPage)
+  }
+
+  const applyFilter = (activeF, toneF, relF) => {
+    setWishPage(0)
+    loadWishes(0, activeF, toneF, relF)
   }
 
   const handleCreateUnique = async () => {
@@ -386,25 +399,91 @@ export default function AdminPage({ defaultTab = 'notify' }) {
               </motion.button>
             </div>
 
+            <div style={{ height: '12px' }} />
+            <div className="glass p-4" style={{ paddingLeft: '15px', paddingRight: '15px', marginBottom: '10px' }}>
+              <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Palinkėjimų filtravimas:</p>
+              <div className="flex flex-wrap gap-2 mb-3">
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  onClick={() => { setWishActiveFilter(null); setWishToneFilter(''); setWishRelFilter(''); applyFilter(null, '', '') }}
+                  className={wishActiveFilter === null && !wishToneFilter && !wishRelFilter ? 'btn-gradient text-xs' : 'text-xs'}
+                  style={{
+                    paddingLeft: '5px', paddingRight: '5px', paddingTop: '4px', paddingBottom: '4px', borderRadius: '8px',
+                    ...(wishActiveFilter === null && !wishToneFilter && !wishRelFilter ? {} : { background: 'rgba(255,255,255,0.5)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.7)' })
+                  }}
+                >
+                  Visi palinkėjimai
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  onClick={() => { setWishActiveFilter(false); applyFilter(false, wishToneFilter, wishRelFilter) }}
+                  className={wishActiveFilter === false ? 'btn-gradient text-xs' : 'text-xs'}
+                  style={{
+                    paddingLeft: '5px', paddingRight: '5px', paddingTop: '4px', paddingBottom: '4px', borderRadius: '8px',
+                    ...(wishActiveFilter === false ? {} : { background: 'rgba(255,255,255,0.5)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.7)' })
+                  }}
+                >
+                  Deaktyvuoti
+                </motion.button>
+              </div>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="text-xs mb-1 block" style={{ color: 'var(--text-primary)' }}>Stilius</label>
+                  <select
+                    style={{ ...selectStyle, padding: '6px 5px' }}
+                    value={wishToneFilter}
+                    onChange={(e) => { setWishToneFilter(e.target.value); applyFilter(wishActiveFilter, e.target.value, wishRelFilter) }}
+                  >
+                    <option value="">Visi stiliai</option>
+                    {TONE_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs mb-1 block" style={{ color: 'var(--text-primary)' }}>Ryšio tipas</label>
+                  <select
+                    style={{ ...selectStyle, padding: '6px 5px' }}
+                    value={wishRelFilter}
+                    onChange={(e) => { setWishRelFilter(e.target.value); applyFilter(wishActiveFilter, wishToneFilter, e.target.value) }}
+                  >
+                    <option value="">Visi tipai</option>
+                    {RELATIONSHIP_OPTIONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+
             <div className="flex flex-col gap-2">
               {wishes.map((w) => (
-                <div key={w.id} className="glass py-3 flex items-start justify-between gap-3" style={{ paddingLeft: '25px', paddingRight: '25px' }}>
+                <div key={w.id} className="glass py-3 flex items-start justify-between gap-3" style={{ paddingLeft: '25px', paddingRight: '5px' }}>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium break-words" style={{ color: 'var(--text-primary)', wordBreak: 'break-word' }}>{w.text}</p>
                     <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>
                       {w.toneLabel} · {REL_LABEL[w.relationshipType] ?? w.relationshipType}
                     </p>
                   </div>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    onClick={() => handleDeactivate(w.id)}
-                    className="text-xs shrink-0"
-                    style={{ color: 'var(--text-muted)' }}
-                    onMouseEnter={e => e.currentTarget.style.color = '#be185d'}
-                    onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
-                  >
-                    Deaktyvuoti
-                  </motion.button>
+                  {w.active ? (
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      onClick={() => handleDeactivate(w.id)}
+                      className="text-xs shrink-0"
+                      style={{ color: 'var(--text-muted)', paddingRight: '5px' }}
+                      onMouseEnter={e => e.currentTarget.style.color = '#be185d'}
+                      onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+                    >
+                      Deaktyvuoti
+                    </motion.button>
+                  ) : (
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      onClick={() => handleActivate(w.id)}
+                      className="text-xs shrink-0"
+                      style={{ color: '#16a34a', paddingRight: '5px' }}
+                      onMouseEnter={e => e.currentTarget.style.color = '#15803d'}
+                      onMouseLeave={e => e.currentTarget.style.color = '#16a34a'}
+                    >
+                      Aktyvuoti
+                    </motion.button>
+                  )}
                 </div>
               ))}
             </div>

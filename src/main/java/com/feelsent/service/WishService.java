@@ -143,8 +143,8 @@ public class WishService {
                 .toList();
     }
 
-    public Page<WishResponse> getActivePaged(int page, int size) {
-        return wishRepository.findAllByActiveTrue(PageRequest.of(page, size)).map(this::toResponse);
+    public Page<WishResponse> getAllPaged(int page, int size, Boolean active, WishTone tone, String relType) {
+        return wishRepository.findWithFilters(active, tone, relType, PageRequest.of(page, size)).map(this::toResponse);
     }
 
     // Draugo moodWant → WishTone (automatinis pasiūlymų tonas)
@@ -197,7 +197,8 @@ public class WishService {
                 w.getTone(),
                 w.getTone().getLabel(),
                 w.getRelationshipType(),
-                "/static/images/wishes/" + w.getId() + ".png"
+                "/static/images/wishes/" + w.getId() + ".png",
+                w.getActive()
         );
     }
 }

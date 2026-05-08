@@ -33,4 +33,14 @@ public interface WishRepository extends JpaRepository<Wish, Long> {
             @Param("tone") WishTone tone,
             @Param("relType") String relType
     );
+
+    @Query("SELECT w FROM Wish w WHERE " +
+           "(:active IS NULL OR w.active = :active) AND " +
+           "(:tone IS NULL OR w.tone = :tone) AND " +
+           "(:relType IS NULL OR w.relationshipType = :relType)")
+    Page<Wish> findWithFilters(
+            @Param("active") Boolean active,
+            @Param("tone") WishTone tone,
+            @Param("relType") String relType,
+            Pageable pageable);
 }
