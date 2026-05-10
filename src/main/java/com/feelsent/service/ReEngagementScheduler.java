@@ -44,7 +44,7 @@ public class ReEngagementScheduler {
     }
 
     // Kiekvieną dieną 03:00 ištrina pranešimus senesnius nei 7 dienos
-    @Transactional
+    @Transactional // - Jei metodo viduje keli DB keitimai — arba visi pavyksta, arba visi atšaukiami (rollback)
     @Scheduled(cron = "0 0 3 * * *")
     public void deleteOldNotifications() {
         LocalDateTime threshold = LocalDateTime.now().minusDays(7);
@@ -62,7 +62,7 @@ public class ReEngagementScheduler {
 
     // Kas valandą tikrina žinutes kurios liko neatsakytos ilgiau nei 2 dienas
     @Transactional
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 0 * * * *") //kada vygdyti metoda, reiškia: kiekvieną valandą, lygiai 0 minučių 0 sekundžių
     public void expireOldMessages() {
         LocalDateTime expiryThreshold = LocalDateTime.now().minusDays(2);
         List<MessageStatus> alreadyDone = Arrays.asList(MessageStatus.REACTED, MessageStatus.EXPIRED);

@@ -151,7 +151,8 @@ public class WishService {
     private WishTone moodWantToTone(MoodWant moodWant) {
         if (moodWant == null) return WishTone.SUPPORTIVE;
         return switch (moodWant) {
-            case CHEER_ME_UP, SURPRISE_ME -> WishTone.FUNNY;
+            case CHEER_ME_UP, SURPRISE_ME, GOOD_DAY -> WishTone.FUNNY;
+            case CALM_ME_DOWN, SWEET_DREAMS -> WishTone.ROMANTIC;
             default -> WishTone.SUPPORTIVE;
         };
     }
